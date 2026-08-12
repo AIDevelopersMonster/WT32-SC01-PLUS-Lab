@@ -4,6 +4,20 @@ Practical hardware/software laboratory for the **WT32-SC01-PLUS** family of ESP3
 
 This repository follows the successful organization of [`esp32-2432s028-lab`](https://github.com/AIDevelopersMonster/esp32-2432s028-lab), but adds stricter separation between **claims**, **board variants**, and **measured evidence**.
 
+## Have a WT32-SC01-PLUS? Report your board
+
+We are building a map of real WT32-SC01-PLUS hardware variants rather than assuming that every board sold under the same name is identical.
+
+**No Git knowledge is required.** Windows users can run the supplied passive audit script, photograph their board, and submit the results through a GitHub Issue.
+
+Start here:
+
+- [`docs/VISITOR-HARDWARE-VALIDATION.md`](docs/VISITOR-HARDWARE-VALIDATION.md) — step-by-step visitor guide.
+- [`tools/windows/wt32-sc01-plus-audit.ps1`](tools/windows/wt32-sc01-plus-audit.ps1) — read-only Windows host/USB audit with optional chip/flash identification.
+- **Issues -> New issue -> “Report your WT32-SC01-PLUS board”** — attach photos and the generated `.txt` report.
+
+The normal reporting workflow does not erase or write flash. Contributors should still review public attachments for MAC addresses or other identifiers before posting.
+
 ## Our reference specimen
 
 The first physical specimen in this lab is marked:
@@ -25,6 +39,7 @@ These markings are treated as specimen evidence, not as proof that every WT32-SC
 ## Start here
 
 - [`docs/HARDWARE-ACCEPTANCE-START.md`](docs/HARDWARE-ACCEPTANCE-START.md) — acceptance workflow.
+- [`docs/VISITOR-HARDWARE-VALIDATION.md`](docs/VISITOR-HARDWARE-VALIDATION.md) — how visitors can report their own board.
 - [`docs/board-passports/README.md`](docs/board-passports/README.md) — how to register a specimen.
 - [`docs/hardware/01-hardware-overview.md`](docs/hardware/01-hardware-overview.md) — current hardware knowledge and unknowns.
 - [`docs/pinout.md`](docs/pinout.md) — pinout working document.
