@@ -1,0 +1,12 @@
+.pio/
+.vscode/
+.idea/
+.DS_Store
+*.bin
+*.elf
+*.map
+*.log
+secrets.h
+.env
+__pycache__/
+*.pyc

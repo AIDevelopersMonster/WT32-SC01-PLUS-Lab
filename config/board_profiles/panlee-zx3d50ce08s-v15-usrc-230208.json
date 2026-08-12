@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "profile_id": "panlee-zx3d50ce08s-v15-usrc-230208",
+  "product_family": "WT32-SC01-PLUS",
+  "manufacturer_marking": "Panlee",
+  "pcb_marking": "ZX3D50CE08S-V15-USRC",
+  "date_or_lot_marking": "230208",
+  "status": "IDENTITY_ONLY",
+  "observed": {
+    "manufacturer_marking": true,
+    "pcb_marking": true,
+    "date_or_lot_marking": true
+  },
+  "verified": {
+    "mcu": null,
+    "flash_bytes": null,
+    "psram_bytes": null,
+    "display_controller": null,
+    "touch_controller": null,
+    "display_resolution": null,
+    "pinout": null
+  },
+  "notes": [
+    "Do not promote vendor/community pinouts into this profile until checked against the physical specimen."
+  ]
+}
