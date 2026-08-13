@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "schema": "wt32-sc01-plus-lab/hw01-identity-capture/v1",
+    "script_version": "0.1.0",
+    "generated_at": "2026-08-13T04:01:03.123299+03:00",
+    "python": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "win32",
+    "port": "COM10",
+    "baud": 115200,
+    "esptool_major": 5,
+    "include_mac": false,
+    "include_efuse": true,
+    "efuse_json": "board-info\\wt32-sc01-plus-hw01-20260813-040053-efuses.json"
+  },
+  "commands": [
+    {
+      "command": "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m esptool version",
+      "argv": [
+        "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "-m",
+        "esptool",
+        "version"
+      ],
+      "returncode": 0,
+      "output": "esptool v5.3.1\n5.3.1\n"
+    },
+    {
+      "command": "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m esptool --port COM10 --baud 115200 chip-id",
+      "argv": [
+        "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "-m",
+        "esptool",
+        "--port",
+        "COM10",
+        "--baud",
+        "115200",
+        "chip-id"
+      ],
+      "returncode": 0,
+      "output": "esptool v5.3.1\nSerial port COM10:\nConnecting...\nDetecting chip type... ESP32-S3\nConnected to ESP32-S3 on COM10:\nChip type:          ESP32-S3 (QFN56) (revision v0.2)\nFeatures:           Wi-Fi, BT 5 (LE), Dual Core + LP Core, 240MHz, Embedded PSRAM 2MB (AP_3v3)\nCrystal frequency:  40MHz\nUSB mode:           USB-Serial/JTAG\nMAC:                48:27:e2:1f:30:5c\n\nUploading stub flasher...\nRunning stub flasher...\nStub flasher running.\n\nWarning: ESP32-S3 has no chip ID. Reading MAC address instead.\nMAC:                48:27:e2:1f:30:5c\n\nHard resetting via RTS pin...\n"
+    },
+    {
+      "command": "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m esptool --port COM10 --baud 115200 flash-id",
+      "argv": [
+        "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "-m",
+        "esptool",
+        "--port",
+        "COM10",
+        "--baud",
+        "115200",
+        "flash-id"
+      ],
+      "returncode": 0,
+      "output": "esptool v5.3.1\nSerial port COM10:\nConnecting...\nDetecting chip type... ESP32-S3\nConnected to ESP32-S3 on COM10:\nChip type:          ESP32-S3 (QFN56) (revision v0.2)\nFeatures:           Wi-Fi, BT 5 (LE), Dual Core + LP Core, 240MHz, Embedded PSRAM 2MB (AP_3v3)\nCrystal frequency:  40MHz\nUSB mode:           USB-Serial/JTAG\nMAC:                48:27:e2:1f:30:5c\n\nUploading stub flasher...\nRunning stub flasher...\nStub flasher running.\n\nFlash Memory Information:\n=========================\nManufacturer: 5e\nDevice: 4018\nDetected flash size: 16MB\nFlash type set in eFuse: quad (4 data lines)\nFlash voltage set by eFuse: 3.3V\n\nHard resetting via RTS pin...\n"
+    },
+    {
+      "command": "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m esptool --port COM10 --baud 115200 get-security-info",
+      "argv": [
+        "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "-m",
+        "esptool",
+        "--port",
+        "COM10",
+        "--baud",
+        "115200",
+        "get-security-info"
+      ],
+      "returncode": 0,
+      "output": "esptool v5.3.1\nSerial port COM10:\nConnecting...\nDetecting chip type... ESP32-S3\nConnected to ESP32-S3 on COM10:\nChip type:          ESP32-S3 (QFN56) (revision v0.2)\nFeatures:           Wi-Fi, BT 5 (LE), Dual Core + LP Core, 240MHz, Embedded PSRAM 2MB (AP_3v3)\nCrystal frequency:  40MHz\nUSB mode:           USB-Serial/JTAG\nMAC:                48:27:e2:1f:30:5c\n\nUploading stub flasher...\nRunning stub flasher...\nStub flasher running.\n\nSecurity Information:\n=====================\nFlags: 0x00000000 (0b0)\nKey Purposes: (0, 0, 0, 0, 0, 0, 12)\n  BLOCK_KEY0 - USER/EMPTY\n  BLOCK_KEY1 - USER/EMPTY\n  BLOCK_KEY2 - USER/EMPTY\n  BLOCK_KEY3 - USER/EMPTY\n  BLOCK_KEY4 - USER/EMPTY\n  BLOCK_KEY5 - USER/EMPTY\nChip ID: 9\nAPI Version: 0\nSecure Boot: Disabled\nFlash Encryption: Disabled\nSPI Boot Crypt Count (SPI_BOOT_CRYPT_CNT): 0x0\n\nHard resetting via RTS pin...\n"
+    },
+    {
+      "command": "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m esptool --port COM10 --baud 115200 read-flash-status",
+      "argv": [
+        "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "-m",
+        "esptool",
+        "--port",
+        "COM10",
+        "--baud",
+        "115200",
+        "read-flash-status"
+      ],
+      "returncode": 0,
+      "output": "esptool v5.3.1\nSerial port COM10:\nConnecting...\nDetecting chip type... ESP32-S3\nConnected to ESP32-S3 on COM10:\nChip type:          ESP32-S3 (QFN56) (revision v0.2)\nFeatures:           Wi-Fi, BT 5 (LE), Dual Core + LP Core, 240MHz, Embedded PSRAM 2MB (AP_3v3)\nCrystal frequency:  40MHz\nUSB mode:           USB-Serial/JTAG\nMAC:                48:27:e2:1f:30:5c\n\nUploading stub flasher...\nRunning stub flasher...\nStub flasher running.\n\nFlash memory status: 0x0200\n\nHard resetting via RTS pin...\n"
+    },
+    {
+      "command": "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m espefuse --port COM10 --baud 115200 summary --format json --file board-info\\wt32-sc01-plus-hw01-20260813-040053-efuses.json",
+      "argv": [
+        "C:\\Users\\CHUWI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "-m",
+        "espefuse",
+        "--port",
+        "COM10",
+        "--baud",
+        "115200",
+        "summary",
+        "--format",
+        "json",
+        "--file",
+        "board-info\\wt32-sc01-plus-hw01-20260813-040053-efuses.json"
+      ],
+      "returncode": 0,
+      "output": "espefuse v5.3.1\nConnecting...\nDetecting chip type... ESP32-S3\n\n=== Run \"summary\" command ===\nSaving eFuse values to board-info\\wt32-sc01-plus-hw01-20260813-040053-efuses.json\n\n"
+    }
+  ]
+}
