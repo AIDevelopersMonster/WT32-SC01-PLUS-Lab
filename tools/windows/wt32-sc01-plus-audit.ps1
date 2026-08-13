@@ -9,7 +9,7 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if ([string]::IsNullOrWhiteSpace($OutFile)) {
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $OutFile = Join-Path (Get-Location) "wt32-sc01-plus-audit-$stamp.txt"
+    $OutFile = Join-Path (Join-Path (Get-Location) "board-info") "wt32-sc01-plus-audit-$stamp.txt"
 }
 
 $lines = [System.Collections.Generic.List[string]]::new()
