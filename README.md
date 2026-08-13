@@ -14,6 +14,7 @@ Start here:
 
 - [`docs/VISITOR-HARDWARE-VALIDATION.md`](docs/VISITOR-HARDWARE-VALIDATION.md) — step-by-step visitor guide.
 - [`tools/windows/wt32-sc01-plus-audit.ps1`](tools/windows/wt32-sc01-plus-audit.ps1) — read-only Windows host/USB audit with optional chip/flash identification.
+- [`docs/software/README.md`](docs/software/README.md) — software tools: what each tool is for and where to download it.
 - **Issues -> New issue -> “Report your WT32-SC01-PLUS board”** — attach photos and the generated `.txt` report.
 
 The normal reporting workflow does not erase or write flash. Contributors should still review public attachments for MAC addresses or other identifiers before posting.
@@ -43,6 +44,7 @@ These markings are treated as specimen evidence, not as proof that every WT32-SC
 - [`docs/board-passports/README.md`](docs/board-passports/README.md) — how to register a specimen.
 - [`docs/hardware/01-hardware-overview.md`](docs/hardware/01-hardware-overview.md) — current hardware knowledge and unknowns.
 - [`docs/pinout.md`](docs/pinout.md) — pinout working document.
+- [`docs/software/README.md`](docs/software/README.md) — software/toolchain index with official download links.
 - [`examples/README.md`](examples/README.md) — planned test sequence.
 
 ## Structure
