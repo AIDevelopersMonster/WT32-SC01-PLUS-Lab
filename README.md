@@ -16,6 +16,7 @@ Start here:
 - [`tools/windows/wt32-sc01-plus-audit.ps1`](tools/windows/wt32-sc01-plus-audit.ps1) — read-only Windows host/USB audit with optional chip/flash identification.
 - [`docs/software/README.md`](docs/software/README.md) — software tools: what each tool is for and where to download it.
 - [`docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md`](docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md) — research snapshot of public WT32-SC01 Plus projects, stacks, complexity and reuse value.
+- [`evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md`](evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md) — verified HW-01 chip/memory/factory-flash analysis for the reference specimen.
 - **Issues -> New issue -> “Report your WT32-SC01-PLUS board”** — attach photos and the generated `.txt` report.
 
 The normal reporting workflow does not erase or write flash. Contributors should still review public attachments for MAC addresses or other identifiers before posting.
@@ -29,6 +30,25 @@ The first physical specimen in this lab is marked:
 - **230208**
 
 These markings are treated as specimen evidence, not as proof that every WT32-SC01-PLUS uses the same PCB, display, touch controller, pinout, memory configuration, or peripherals.
+
+### Verified HW-01 memory identity
+
+For this specimen, direct tool measurements currently establish:
+
+- ESP32-S3 QFN56 revision v0.2;
+- 40 MHz crystal;
+- **16 MiB SPI Flash**;
+- Flash ID `0x5E:0x4018`, Quad, 3.3 V;
+- **2 MiB embedded PSRAM (`AP_3v3`)**;
+- two complete 16 MiB factory-flash reads with identical SHA-256.
+
+Verified factory-image SHA-256:
+
+```text
+3772C1BF7D6D2B713973212DDF5C671E3C844A13A8464F675343D9AED4E7F044
+```
+
+See the full analysis in [`evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md`](evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md).
 
 ## Repository philosophy
 
@@ -47,6 +67,7 @@ These markings are treated as specimen evidence, not as proof that every WT32-SC
 - [`docs/pinout.md`](docs/pinout.md) — pinout working document.
 - [`docs/software/README.md`](docs/software/README.md) — software/toolchain index with official download links.
 - [`docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md`](docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md) — dated research report on the WT32-SC01 Plus project ecosystem.
+- [`evidence/specimens/panlee-v15-230208-sample-a/README.md`](evidence/specimens/panlee-v15-230208-sample-a/README.md) — specimen-specific acceptance evidence.
 - [`examples/README.md`](examples/README.md) — planned test sequence.
 
 ## Structure
@@ -66,7 +87,7 @@ WT32-SC01-PLUS-Lab/
 │   ├── research/             # dated ecosystem/reference-project research
 │   └── software/             # framework/toolchain notes
 ├── evidence/
-│   ├── specimens/            # dumps, hashes, measurements and acceptance evidence
+│   ├── specimens/            # hashes, measurements and acceptance evidence
 │   └── README.md
 ├── examples/                 # reproducible hardware tests
 ├── hardware/
@@ -80,10 +101,10 @@ WT32-SC01-PLUS-Lab/
 
 ## Planned acceptance sequence
 
-| Stage | Target | Initial status |
+| Stage | Target | Current status |
 |---|---|---|
 | HW-00 | Photograph and identify the specimen | IN PROGRESS |
-| HW-01 | Chip / flash / PSRAM / serial identity | TODO |
+| HW-01 | Chip / flash / PSRAM / factory backup | **PASS** |
 | HW-02 | Display bus and controller | TODO |
 | HW-03 | Touch controller and coordinates | TODO |
 | HW-04 | Backlight / buttons / onboard I/O | TODO |
@@ -96,6 +117,8 @@ WT32-SC01-PLUS-Lab/
 ## Important
 
 The repository is intentionally conservative at bootstrap. Pin assignments, display controller, touch controller and memory configuration must be confirmed for the **Panlee ZX3D50CE08S-V15-USRC** specimen before they are promoted into a default board profile.
+
+Binary analysis of the verified factory firmware provides strong evidence for a 480×320 ST7796/8080 display stack and an FT5x06-family touch driver, but HW-02/HW-03 remain open until the physical hardware is verified independently.
 
 ## License
 
