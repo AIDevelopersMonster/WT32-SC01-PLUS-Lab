@@ -10,3 +10,7 @@ secrets.h
 .env
 __pycache__/
 *.pyc
+
+# Local board identity captures may contain MAC addresses, eFuse data,
+# host paths, serial-port details and other specimen-specific information.
+board-info/
