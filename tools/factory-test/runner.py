@@ -47,48 +47,55 @@ class FactoryRunner:
                 f"Unexpected PC for {label}: expected 0x{expected:08X}, got 0x{actual:08X}"
             )
 
+    def _wait_at(self, expected: int, label: str, timeout: float) -> None:
+        print(f"[JTAG] waiting for {label} @ 0x{expected:08X} ...")
+        try:
+            self.client.wait_halt(timeout=timeout)
+        except OpenOcdError as exc:
+            pc_text = "unknown"
+            targets_text = "unavailable"
+            try:
+                self.client.halt()
+                pc_text = f"0x{self.client.read_reg('pc'):08X}"
+                targets_text = " | ".join(self.client.command("targets").splitlines())
+            except Exception:
+                pass
+            raise OpenOcdError(
+                f"Timeout waiting for {label} @ 0x{expected:08X}; "
+                f"forced-halt PC={pc_text}; targets={targets_text}"
+            ) from exc
+        self._assert_pc(expected, label)
+        print(f"[JTAG] reached {label} @ 0x{expected:08X}")
+
     def prepare_factory_runner(self) -> list[SignatureResult]:
-        """Reach ENTRY_GATE by normal execution before any volatile state injection.
-
-        The verified sequence for this target is:
-
-            reset halt
-            arm hardware breakpoint at ENTRY_GATE
-            resume
-            wait for ENTRY_GATE
-            verify flash-mapped firmware signatures
-            inject only the recovered volatile selector state
-
-        We intentionally do not read the flash-mapped IROM while still halted in
-        reset/ROM state.  On this ESP32-S3/OpenOCD setup such reads may return the
-        inaccessible-memory sentinel pattern 0xBAD0BAD0 before the application
-        restores its MMU/cache mapping.
-
-        We also intentionally do not arm the breakpoint before a subsequent
-        reset: the ESP32-S3 reset path may clear the hardware breakpoint state.
-        """
+        """Reach ENTRY_GATE by normal execution before any volatile state injection."""
+        print("[JTAG] clear breakpoints")
         self.client.clear_breakpoints()
+        print("[JTAG] reset halt")
         self.client.reset_halt()
 
-        # Do not verify IROM yet: flash/MMU mapping may not be live at reset halt.
+        # Flash-mapped IROM is deliberately not verified here: immediately after
+        # reset-halt this target can expose the inaccessible 0xBAD0BAD0 sentinel.
+        print(f"[JTAG] arm HW breakpoint at factory entry gate 0x{ENTRY_GATE:08X}")
         self.client.set_hw_breakpoint(ENTRY_GATE)
+        print("[JTAG] resume normal boot")
         self.client.resume()
-        self.client.wait_halt(timeout=5.0)
-        self._assert_pc(ENTRY_GATE, "factory entry gate")
+        self._wait_at(ENTRY_GATE, "factory entry gate", 5.0)
 
-        # The application reached ENTRY_GATE under its own execution, so the
-        # flash mapping is live.  Verify the known image before touching state.
+        print("[JTAG] verify firmware signatures with application flash mapping live")
         results = self.verify_firmware()
+        print("[JTAG] firmware signatures VERIFIED")
 
         stack_ptr = self.client.read_reg("a1")
+        print(f"[JTAG] inject volatile factory selector state at stack 0x{stack_ptr:08X}")
         self.client.write_reg("a10", 1)
         self.client.write_byte(stack_ptr, 0xFF)
 
         self.client.clear_breakpoints()
+        print(f"[JTAG] arm HW breakpoint at runner boundary 0x{RUNNER_START:08X}")
         self.client.set_hw_breakpoint(RUNNER_START)
         self.client.resume()
-        self.client.wait_halt(timeout=5.0)
-        self._assert_pc(RUNNER_START, "factory runner start")
+        self._wait_at(RUNNER_START, "factory runner boundary", 5.0)
         self.client.clear_breakpoints()
         return results
 
@@ -101,18 +108,12 @@ class FactoryRunner:
         if stage.mode == "async":
             return self._run_audio(stage, audio_observe_seconds=audio_observe_seconds)
 
+        print(f"[JTAG] select {stage.key} stage PC=0x{stage.entry:08X}")
         self.client.write_reg("pc", stage.entry)
         self.client.set_hw_breakpoint(stage.next_pc)
         self.client.resume()
         try:
-            self.client.wait_halt(timeout=stage.timeout)
-            self._assert_pc(stage.next_pc, stage.title)
-        except Exception:
-            try:
-                self.client.halt()
-            except Exception:
-                pass
-            raise
+            self._wait_at(stage.next_pc, f"{stage.key} return boundary", stage.timeout)
         finally:
             try:
                 self.client.clear_breakpoints()
@@ -126,8 +127,7 @@ class FactoryRunner:
 
         self.client.set_hw_breakpoint(stage.next_pc)
         self.client.resume()
-        self.client.wait_halt(timeout=stage.timeout)
-        self._assert_pc(stage.next_pc, "audio launcher return")
+        self._wait_at(stage.next_pc, "audio launcher return", stage.timeout)
         self.client.clear_breakpoints()
 
         self.client.resume()
