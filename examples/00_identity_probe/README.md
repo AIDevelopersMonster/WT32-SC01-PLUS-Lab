@@ -2,6 +2,12 @@
 
 First executable firmware test for the reference **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208** specimen.
 
+**Physical validation status: `PASS` (2026-08-14).**
+
+Validation protocol:
+
+- [`../../evidence/specimens/panlee-v15-230208-sample-a/00_identity_probe/README.md`](../../evidence/specimens/panlee-v15-230208-sample-a/00_identity_probe/README.md)
+
 This example is deliberately narrow: it does **not** try to rediscover display, touch, audio, SD, RS-485 or expansion wiring that has already been recovered from the verified factory firmware. Instead, it independently re-measures the MCU/memory identity at runtime and compares the result with the established HW-01 / factory-reverse-engineering baseline.
 
 ## Why this test exists
@@ -39,7 +45,7 @@ At startup it prints:
 - internal heap totals and largest free block;
 - a field-by-field comparison with the reference specimen baseline.
 
-Expected comparison result for the reference specimen:
+The physical reference specimen produced:
 
 ```text
 [REFERENCE COMPARISON]
@@ -51,7 +57,7 @@ Expected comparison result for the reference specimen:
   Identity baseline        : MATCH
 ```
 
-A mismatch is an investigation result, not an automatic board failure. It may indicate another OEM/revision, a different memory population, a build/configuration problem, or an incorrect assumption in the baseline.
+A mismatch on another specimen is an investigation result, not an automatic board failure. It may indicate another OEM/revision, a different memory population, a build/configuration problem, or an incorrect assumption in the baseline.
 
 ## Safety boundary
 
@@ -67,47 +73,60 @@ The application itself intentionally performs no external peripheral initializat
 
 This prevents `00_identity_probe` from depending on still-variant-sensitive peripheral pin maps.
 
-**Important:** uploading this firmware is still destructive to the currently installed factory firmware image because normal ESP-IDF flashing replaces boot/application/partition data. Use it only after a verified full factory-flash backup exists. The reference specimen already has two identical full 16 MiB reads recorded by the lab.
+**Important:** uploading this firmware is destructive to the currently installed factory firmware image because normal ESP-IDF flashing replaces boot/application/partition data. Use it only after a verified full factory-flash backup exists. The reference specimen has a verified full 16 MiB factory backup recorded by the lab.
 
-## Build
+## Reproducible configuration
 
-This example is a standalone ESP-IDF project.
+The project keeps only the minimal board-specific configuration in `sdkconfig.defaults`:
+
+```text
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_SPIRAM=y
+```
+
+A clean 2026-08-14 build from this Git-controlled defaults file succeeded without manual `menuconfig` changes. ESP-IDF resolved the Quad/Auto/40 MHz PSRAM settings for ESP32-S3 from its defaults after PSRAM support was enabled.
+
+## Build and run
 
 From an ESP-IDF shell:
 
 ```powershell
 cd examples\00_identity_probe
-idf.py set-target esp32s3
-idf.py menuconfig
 idf.py build
-```
-
-For the reference specimen, ensure PSRAM support is enabled for ESP32-S3 and configured conservatively for the known **Quad** PSRAM interface. Do not convert an unverified PSRAM clock into a board-level fact merely because a particular build setting works.
-
-Then flash and monitor using the port that belongs to the board:
-
-```powershell
 idf.py -p COMx flash monitor
 ```
 
-Exit the monitor with the normal ESP-IDF monitor shortcut.
+On the verified reference specimen, ESP-IDF reported during boot:
+
+```text
+esp_psram: Found 2MB PSRAM device
+esp_psram: Speed: 40MHz
+esp_psram: SPI SRAM memory test OK
+```
+
+The application is intentionally one-shot and returns from `app_main()` after printing the result. A final line such as:
+
+```text
+I (...) main_task: Returned from app_main()
+```
+
+is therefore normal completion, not a hang.
+
+Exit `idf_monitor` with:
+
+```text
+Ctrl+]
+```
+
+ESP-IDF may also advertise `Ctrl+T`, then `Ctrl+X`. If the host monitor is instead interrupted after failed attempts to send characters to this non-interactive firmware, host-side `Writing to serial is timing out`, `KeyboardInterrupt`, or a nonzero `idf_monitor` exit code does **not** invalidate a test that already reached the final `END 00_identity_probe` marker.
 
 ## Evidence collection
 
-Save the complete serial output from reset through the final `END 00_identity_probe` marker. Do not publish the base MAC address unless you intentionally want that hardware identifier public.
-
-Recommended evidence destination after the physical run:
+The physical PASS protocol is stored at:
 
 ```text
-evidence/specimens/panlee-v15-230208-sample-a/00_identity_probe/
+evidence/specimens/panlee-v15-230208-sample-a/00_identity_probe/README.md
 ```
 
-Suggested files:
-
-```text
-serial-log.txt
-build-environment.txt
-README.md
-```
-
-Only after the real board has produced the expected runtime comparison should the example status be promoted from TODO to PASS.
+The complete local serial log should be retained for lab control. The public repository should not publish the base MAC address unless disclosure is intentional.
