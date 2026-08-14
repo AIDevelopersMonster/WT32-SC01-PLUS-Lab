@@ -132,6 +132,10 @@ After forcing the factory-test branch through JTAG, the physical display visibly
 - RGB test patterns;
 - a black/white grayscale gradient.
 
+![Factory LCD RGB and grayscale test on the Panlee reference specimen](hardware/images/panlee-v15-230208-sample-a/factory-lcd-rgb-grayscale-test.jpg)
+
+*Factory LCD test on the Panlee ZX3D50CE08S-V15-USRC 230208 reference specimen. The original factory firmware, entered through the recovered hidden test-mode path using JTAG, displays a combined RGB color field and grayscale gradient. This photograph is direct Level A evidence for the working display path.*
+
 This is direct physical confirmation that the factory display path, ST7796 initialization and panel data path are operational on the reference specimen.
 
 ### Factory audio path physically verified — Level A + B
