@@ -72,6 +72,14 @@ OK               0x42006FC0
 | USB Con / USB Dis | Not executed under built-in USB-JTAG | Test intentionally remuxes GPIO19/GPIO20 used by the debugger |
 | Native external RS-485 factory entry | NOT YET VERIFIED | Planned when a USB-RS485 adapter/cable is available |
 
+### Physical demo video
+
+A YouTube Shorts recording shows the recovered factory diagnostics being exercised on the reference board, including the factory audio playback, display/graphics test, touch-target test and other demo-visible stages invoked through the JTAG/FactoryCTL workflow:
+
+- [Recovered WT32-SC01-PLUS factory tests — physical demo](https://www.youtube.com/shorts/ZQQNs8BSU0c)
+
+The video is a **JTAG-assisted demonstration of recovered factory routines**, not yet proof of a complete native production-fixture run. Native entry through the reconstructed RS-485 service channel remains a separate future validation step.
+
 This is the current stopping point of the reverse-engineering example. The next important experiment is to enter the same factory test through its **native RS-485 service channel**, with no JTAG selector injection.
 
 ## FactoryCTL v0.1.1
