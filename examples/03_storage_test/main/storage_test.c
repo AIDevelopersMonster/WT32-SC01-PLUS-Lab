@@ -29,6 +29,9 @@ static const char *TAG = "storage_test";
  *
  * It initializes the card, prints card metadata, reads sector 0, and if an
  * MBR partition is present reads only the first sector of the first partition.
+ * It also checks whether declared MBR partition extents fit inside the capacity
+ * reported by the card CSD. A mismatch is classified as a media anomaly, not
+ * as a failure of the WT32-SC01-PLUS SDSPI hardware path.
  */
 #define PIN_SD_CLK              39
 #define PIN_SD_MOSI             40
@@ -38,6 +41,13 @@ static const char *TAG = "storage_test";
 #define SECTOR_SIZE             512
 
 static uint8_t s_sector[SECTOR_SIZE] __attribute__((aligned(4)));
+
+typedef struct {
+    uint32_t first_partition_lba;
+    unsigned nonempty_partitions;
+    uint64_t max_partition_end_exclusive;
+    bool geometry_consistent;
+} mbr_inspection_t;
 
 static uint16_t le16(const uint8_t *p)
 {
@@ -91,13 +101,17 @@ static void print_boot_sector_hint(const uint8_t *sector, uint32_t lba)
     }
 }
 
-static uint32_t inspect_mbr(const uint8_t *sector)
+static mbr_inspection_t inspect_mbr(const uint8_t *sector, uint64_t card_sector_count)
 {
+    mbr_inspection_t result = {
+        .first_partition_lba = 0,
+        .nonempty_partitions = 0,
+        .max_partition_end_exclusive = 0,
+        .geometry_consistent = true,
+    };
+
     printf("\n[SECTOR 0 / PARTITION TABLE]\n");
     printf("  Signature 0x55AA          : %s\n", has_55aa_signature(sector) ? "yes" : "no");
-
-    uint32_t first_partition_lba = 0;
-    unsigned nonempty = 0;
 
     for (unsigned i = 0; i < 4; ++i) {
         const uint8_t *entry = &sector[446 + i * 16];
@@ -109,21 +123,50 @@ static uint32_t inspect_mbr(const uint8_t *sector)
             continue;
         }
 
-        ++nonempty;
-        printf("  Partition %u             : type=0x%02X start=%" PRIu32 " sectors=%" PRIu32 "\n",
-               i + 1, type, lba, count);
+        const uint64_t end_exclusive = (uint64_t)lba + (uint64_t)count;
+        const bool in_range = end_exclusive <= card_sector_count;
 
-        if (first_partition_lba == 0) {
-            first_partition_lba = lba;
+        ++result.nonempty_partitions;
+        printf("  Partition %u             : type=0x%02X start=%" PRIu32
+               " sectors=%" PRIu32 " end(exclusive)=%" PRIu64 " [%s]\n",
+               i + 1,
+               type,
+               lba,
+               count,
+               end_exclusive,
+               in_range ? "IN RANGE" : "OUT OF RANGE");
+
+        if (result.first_partition_lba == 0) {
+            result.first_partition_lba = lba;
+        }
+        if (end_exclusive > result.max_partition_end_exclusive) {
+            result.max_partition_end_exclusive = end_exclusive;
+        }
+        if (!in_range) {
+            result.geometry_consistent = false;
         }
     }
 
-    if (nonempty == 0) {
+    if (result.nonempty_partitions == 0) {
         printf("  MBR partitions           : none detected\n");
         printf("  Interpretation           : sector 0 may be a superfloppy/volume boot sector\n");
     }
 
-    return first_partition_lba;
+    printf("\n[CAPACITY CONSISTENCY]\n");
+    printf("  CSD addressable sectors  : %" PRIu64 "\n", card_sector_count);
+    if (result.nonempty_partitions == 0) {
+        printf("  MBR maximum end          : n/a\n");
+        printf("  MBR vs CSD geometry      : NOT APPLICABLE\n");
+    } else {
+        printf("  MBR maximum end          : %" PRIu64 " (exclusive)\n",
+               result.max_partition_end_exclusive);
+        printf("  MBR vs CSD geometry      : %s\n",
+               result.geometry_consistent
+                   ? "PASS"
+                   : "WARNING - PARTITION EXTENT EXCEEDS CSD CAPACITY");
+    }
+
+    return result;
 }
 
 void app_main(void)
@@ -139,6 +182,7 @@ void app_main(void)
     printf(" Sector writes             : NO\n");
     printf(" Format / create / rename  : NO\n");
     printf(" Read scope                : card metadata + sector 0 + first partition boot sector\n");
+    printf(" Capacity check            : MBR partition extents vs card CSD\n");
     printf("================================================================\n\n");
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
@@ -206,6 +250,8 @@ void app_main(void)
     printf("\n[CARD INFORMATION]\n");
     sdmmc_card_print_info(stdout, &card);
 
+    const uint64_t card_sector_count = (uint64_t)card.csd.capacity;
+
     int real_freq_khz = 0;
     if (sdspi_host_get_real_freq(device, &real_freq_khz) == ESP_OK) {
         printf("  SDSPI actual clock       : %d kHz\n", real_freq_khz);
@@ -222,14 +268,14 @@ void app_main(void)
         return;
     }
 
-    const uint32_t first_partition_lba = inspect_mbr(s_sector);
+    const mbr_inspection_t mbr = inspect_mbr(s_sector, card_sector_count);
 
-    if (first_partition_lba != 0) {
+    if (mbr.first_partition_lba != 0) {
         ESP_LOGI(TAG, "Reading first partition boot sector at LBA %" PRIu32 " (read-only)",
-                 first_partition_lba);
-        ret = sdmmc_read_sectors(&card, s_sector, first_partition_lba, 1);
+                 mbr.first_partition_lba);
+        ret = sdmmc_read_sectors(&card, s_sector, mbr.first_partition_lba, 1);
         if (ret == ESP_OK) {
-            print_boot_sector_hint(s_sector, first_partition_lba);
+            print_boot_sector_hint(s_sector, mbr.first_partition_lba);
         } else {
             ESP_LOGW(TAG, "partition boot sector read failed: %s", esp_err_to_name(ret));
         }
@@ -244,8 +290,19 @@ void app_main(void)
     printf("  Sectors written          : no\n");
     printf("  Card formatted           : no\n");
 
-    printf("\nRESULT: STORAGE READ PATH PASS CANDIDATE\n");
-    printf("Physical PASS requires this successful log from the real specimen/card.\n");
+    printf("\n[RESULT]\n");
+    printf("  SDSPI read path          : PASS\n");
+    if (mbr.nonempty_partitions == 0) {
+        printf("  Card capacity consistency: NOT APPLICABLE (no MBR partitions)\n");
+        printf("RESULT: STORAGE READ PATH PASS CANDIDATE\n");
+    } else if (mbr.geometry_consistent) {
+        printf("  Card capacity consistency: PASS\n");
+        printf("RESULT: STORAGE READ PATH PASS CANDIDATE\n");
+    } else {
+        printf("  Card capacity consistency: WARNING - MBR EXCEEDS CSD CAPACITY\n");
+        printf("RESULT: PASS WITH MEDIA ANOMALY\n");
+        printf("NOTE: the WT32-SC01-PLUS SDSPI read path passed; investigate this SD card separately.\n");
+    }
     printf("END 03_storage_test\n");
 
     sdspi_host_remove_device(device);
