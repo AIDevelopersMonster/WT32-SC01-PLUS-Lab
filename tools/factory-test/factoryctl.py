@@ -15,7 +15,7 @@ from runner import FactoryRunner, FirmwareMismatch, StageRefused
 from tests import STAGES, list_stages
 
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 
 def print_banner() -> None:
@@ -49,9 +49,20 @@ def confirm_sd(assume_yes: bool) -> bool:
     return answer in ("y", "yes")
 
 
+def make_client(args: argparse.Namespace) -> OpenOcdClient:
+    return OpenOcdClient(
+        args.host,
+        args.port,
+        args.target,
+        args.timeout,
+        transport=args.transport,
+    )
+
+
 def status(args: argparse.Namespace) -> int:
     print_banner()
-    print(f"OpenOCD telnet: {args.host}:{args.port}")
+    print(f"OpenOCD transport: {args.transport}")
+    print(f"OpenOCD endpoint: {args.host}:{args.port}")
     print(f"Target: {args.target}")
     print("Safety profile: ESP32-S3 builtin USB-JTAG")
     print("USB factory test: REFUSED in v0.1")
@@ -65,7 +76,7 @@ def status(args: argparse.Namespace) -> int:
             + ("VERIFIED" if digest == KNOWN_FACTORY_FLASH_SHA256 else "MISMATCH")
         )
 
-    with OpenOcdClient(args.host, args.port, args.target, args.timeout) as client:
+    with make_client(args) as client:
         target = client.target_status()
         print(f"CPU state: {target.state}")
         if target.state == "halted":
@@ -79,7 +90,7 @@ def status(args: argparse.Namespace) -> int:
             print("Firmware signatures: " + ("VERIFIED" if target_matches(results) else "MISMATCH"))
         else:
             print("Firmware signatures: NOT CHECKED (target is not halted)")
-            print("A run command will reset/halt and verify signatures before changing PC/registers.")
+            print("A run command will halt at the factory gate and verify signatures before changing PC/registers.")
     return 0
 
 
@@ -98,10 +109,11 @@ def run_stage(args: argparse.Namespace) -> int:
     print_banner()
     print(f"Requested stage: {stage.key}")
     print(stage.note)
+    print(f"OpenOCD transport: {args.transport} ({args.host}:{args.port})")
     if stage.key == "audio":
         print("Do not touch the display during the audio observation window.")
 
-    client = OpenOcdClient(args.host, args.port, args.target, args.timeout)
+    client = make_client(args)
     try:
         client.connect()
         runner = FactoryRunner(client)
@@ -146,8 +158,19 @@ def build_parser() -> argparse.ArgumentParser:
             "ZX3D50CE08S-V15-USRC 230208 factory firmware."
         )
     )
-    parser.add_argument("--host", default="127.0.0.1", help="OpenOCD telnet host")
-    parser.add_argument("--port", type=int, default=4444, help="OpenOCD telnet port")
+    parser.add_argument("--host", default="127.0.0.1", help="OpenOCD host")
+    parser.add_argument(
+        "--transport",
+        choices=("tcl", "telnet"),
+        default="tcl",
+        help="OpenOCD control interface (default: tcl RPC)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=6666,
+        help="OpenOCD control port (default: 6666 for Tcl RPC; use 4444 with --transport telnet)",
+    )
     parser.add_argument("--target", default="esp32s3.cpu0", help="OpenOCD target name")
     parser.add_argument("--timeout", type=float, default=3.0, help="OpenOCD command timeout")
     parser.add_argument(
@@ -178,6 +201,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.port <= 0 or args.timeout <= 0:
         parser.error("--port and --timeout must be positive")
+
+    if args.transport == "telnet" and args.port == 6666:
+        args.port = 4444
 
     if args.command == "list":
         print_banner()
