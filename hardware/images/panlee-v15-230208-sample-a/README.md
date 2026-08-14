@@ -13,9 +13,9 @@ For connector documentation, use the rear side of the board with the `I/O`, `DEB
 
 ## Raw photo mapping
 
-The raw photographs are intentionally preserved with the filenames produced by the ChatGPT upload/session pipeline. They are already committed to this repository and must not be renamed merely for cosmetic reasons. Canonical IDs `PH01` ... `PH06` provide the stable semantic reference used by documentation.
+The raw photographs are intentionally preserved with the filenames produced by the ChatGPT upload/session pipeline. They are already committed to this repository and must not be renamed merely for cosmetic reasons. Canonical IDs `PH01` ... provide the stable semantic reference used by documentation.
 
-| ID | Raw filename | View / purpose | Status |
+| ID | Raw / canonical filename | View / purpose | Status |
 |---|---|---|---|
 | PH01 | `image-1786523855319.jpg` | Complete rear-side board overview in enclosure | RAW PRESENT |
 | PH02 | `image-1786523897406.jpg` | Close-up of WT32-S3-WROVER / Wireless-Tag module marking | RAW PRESENT |
@@ -23,6 +23,7 @@ The raw photographs are intentionally preserved with the filenames produced by t
 | PH04 | `image-1786523930462.jpg` | Physical I/O, DEBUG and SPK connectors, suitable for contact orientation | RAW PRESENT |
 | PH05 | `image-1786523948067.jpg` | Close-up of RS485/audio/power-related IC area and microSD edge | RAW PRESENT |
 | PH06 | `image-1786523959164.jpg` | Dedicated RS485 connector view showing PCB silk `+`, `-`, `B`, `A` | RAW PRESENT |
+| PH07 | `factory-lcd-rgb-grayscale-test.jpg` | Factory LCD self-test result: combined RGB color field plus grayscale gradient on the physical reference specimen | **LEVEL A EVIDENCE** |
 
 ## Canonical and annotated derivatives
 
@@ -40,7 +41,19 @@ Annotated versions use an `A` suffix, for example:
 - `PH04A-io-debug-spk-pin-numbers.png`
 - `PH06A-rs485-pin-numbers.png`
 
-The raw file is the evidence source; a canonical or annotated copy is a presentation derivative.
+`PH07` is already stored with a semantic canonical filename because it was produced specifically as experiment evidence rather than as a raw board-identification photograph.
+
+## Factory-test evidence
+
+### PH07 — LCD RGB + grayscale factory test
+
+File: [`factory-lcd-rgb-grayscale-test.jpg`](factory-lcd-rgb-grayscale-test.jpg)
+
+This photograph was captured after entering the recovered hidden factory-test path on the original factory firmware using ESP32-S3 built-in USB JTAG. The display visibly shows a combined RGB color field and grayscale gradient.
+
+Evidence status: **Level A** — directly observed on the physical Panlee `ZX3D50CE08S-V15-USRC` / `230208` reference specimen.
+
+The photo supports the HW-02 conclusion that the factory display path is physically operational. It does not by itself establish touch-controller behavior or generalize the display configuration to other OEM/revision variants.
 
 ## Identification policy
 
