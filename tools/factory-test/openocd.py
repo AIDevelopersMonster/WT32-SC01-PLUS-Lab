@@ -88,6 +88,16 @@ class OpenOcdClient:
                 i += 2
         return bytes(out)
 
+    @staticmethod
+    def _clean_terminal_text(text: str) -> str:
+        # OpenOCD telnet can emit terminal-editing backspaces together with
+        # asynchronous target-selection/status messages.  They are harmless but
+        # must not confuse command-specific parsers.
+        while "\x08" in text:
+            text = re.sub(r"[^\n]\x08", "", text)
+            text = text.replace("\x08", "")
+        return text.replace("\r", "")
+
     def _read_prompt(self, *, timeout: float) -> str:
         if self.sock is None:
             raise OpenOcdError("OpenOCD socket is not connected")
@@ -106,7 +116,7 @@ class OpenOcdClient:
         else:
             raise OpenOcdError("Timed out waiting for OpenOCD prompt")
         clean = self._strip_telnet(bytes(raw)).decode("utf-8", errors="replace")
-        return clean.replace("\r", "")
+        return self._clean_terminal_text(clean)
 
     def command(self, command: str, *, timeout: float | None = None) -> str:
         if self.sock is None:
@@ -126,20 +136,24 @@ class OpenOcdClient:
         return "\n".join(lines).strip()
 
     def target_status(self) -> TargetStatus:
-        raw = self.command("targets")
-        for line in raw.splitlines():
-            if self.target in line:
-                low = line.lower()
-                if "halted" in low:
-                    return TargetStatus("halted", raw)
-                if "running" in low:
-                    return TargetStatus("running", raw)
-        low = raw.lower()
-        if "halted" in low and "running" not in low:
-            return TargetStatus("halted", raw)
-        if "running" in low and "halted" not in low:
-            return TargetStatus("running", raw)
-        return TargetStatus("unknown", raw)
+        last_raw = ""
+        for _ in range(3):
+            raw = self.command("targets")
+            last_raw = raw
+            for line in raw.splitlines():
+                if self.target in line:
+                    low = line.lower()
+                    if "halted" in low:
+                        return TargetStatus("halted", raw)
+                    if "running" in low:
+                        return TargetStatus("running", raw)
+            low = raw.lower()
+            if "halted" in low and "running" not in low:
+                return TargetStatus("halted", raw)
+            if "running" in low and "halted" not in low:
+                return TargetStatus("running", raw)
+            time.sleep(0.02)
+        return TargetStatus("unknown", last_raw)
 
     def wait_halt(self, *, timeout: float, poll_interval: float = 0.10) -> None:
         deadline = time.monotonic() + timeout
@@ -177,11 +191,22 @@ class OpenOcdClient:
             )
 
     def read_reg(self, name: str) -> int:
-        out = self.command(f"reg {name}")
-        values = re.findall(r"0x[0-9a-fA-F]+", out)
-        if not values:
-            raise OpenOcdError(f"Cannot parse register {name!r} from: {out!r}")
-        return int(values[-1], 16)
+        # The ESP32-S3 OpenOCD build can asynchronously print messages such as
+        # "Set GDB target to 'esp32s3.cpu0'" between a halt notification and the
+        # requested register response.  Retry a few times rather than treating
+        # that unsolicited line as a register-read failure.
+        outputs: list[str] = []
+        for _ in range(4):
+            out = self.command(f"reg {name}")
+            outputs.append(out)
+            values = re.findall(r"0x[0-9a-fA-F]+", out)
+            if values:
+                return int(values[-1], 16)
+            time.sleep(0.03)
+        raise OpenOcdError(
+            f"Cannot parse register {name!r} after retries; responses: "
+            + " | ".join(repr(out) for out in outputs)
+        )
 
     def write_reg(self, name: str, value: int, *, verify: bool = True) -> None:
         self.command(f"reg {name} 0x{value:x}")
