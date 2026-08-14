@@ -50,6 +50,169 @@ Verified factory-image SHA-256:
 
 See the full analysis in [`evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md`](evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md).
 
+## 2026-08-14 factory-firmware / JTAG milestone
+
+A major reverse-engineering milestone was completed on the **Panlee ZX3D50CE08S-V15-USRC 230208** reference specimen using its verified factory image and the ESP32-S3 built-in USB Serial/JTAG interface.
+
+### Evidence convention used below
+
+- **Level A** — observed directly on the physical reference specimen.
+- **Level B** — recovered directly from the verified factory firmware for that specimen.
+- **Level C** — external source for the exact or closely related board family.
+- **Level D** — inference only; not yet promoted to a verified board fact.
+
+### Built-in USB JTAG confirmed — Level A
+
+The board Type-C connection enumerates the ESP32-S3 built-in USB Serial/JTAG device (`VID 0x303A`, `PID 0x1001`). OpenOCD connected successfully with `board/esp32s3-builtin.cfg`, detected both Xtensa cores, and provided working hardware breakpoints and register/memory access.
+
+No flash programming was performed during this work. The factory flash remained unchanged; only CPU debug state, registers and one RAM byte were temporarily modified through JTAG.
+
+### Hidden factory-test entry confirmed — Level A + B
+
+Static analysis identified a factory-selection routine at:
+
+```text
+0x420068B4  factory-mode selection / handshake path
+```
+
+A hardware breakpoint on the physical board stopped exactly at `PC = 0x420068B4`, confirming that the recovered function is executed during real factory-firmware startup.
+
+The normal boot path does **not** enter the complete factory test. The recovered code performs a UART-protocol handshake and only enters the hidden test branch when receive succeeds and the received command/value is `0xFF`.
+
+The relevant control-flow region was verified live:
+
+```text
+0x4200690B  receive/poll call
+0x4200690E  return from receive
+0x42006911  reject if receive failed
+0x42006914  load received byte
+0x42006917  reject unless byte == 0xFF
+0x4200691A  accepted "Enter test mode" branch
+```
+
+At `0x4200690E`, the physical board showed `a10 = 0`, explaining why an ordinary boot prints `Fine qmsd!` but never enters the hidden production test.
+
+For controlled verification, JTAG was used to change only volatile runtime state:
+
+```text
+a10 = 1          # emulate successful receive
+[a1] = 0xFF      # emulate accepted factory command
+```
+
+Execution then reached `0x4200691A` and subsequently the factory-test runner at `0x42007008`. This demonstrates the hidden branch without altering the factory firmware image.
+
+### Factory UART/RS-485 path recovered from firmware — Level B
+
+The factory protocol implementation is associated with a separate UART/RS-485 path rather than the USB Serial/JTAG console. Current firmware reconstruction gives:
+
+```text
+UART1
+115200 8N1
+TX  = GPIO42
+RX  = GPIO1
+RTS = GPIO2
+RS-485 half-duplex mode
+```
+
+This path has not yet been electrically exercised on the reference specimen, so the protocol framing and external fixture behavior remain an active reverse-engineering item.
+
+### Display factory test physically verified — Level A + B
+
+The factory firmware contains an **ST7796** display driver and initializes a 320×480 native panel. Runtime UART output from the physical board reported:
+
+```text
+ESP32S3_LCD: lcd init ok
+lcd st7796: MADCTL=28
+```
+
+`MADCTL = 0x28` is consistent with axis swapping for a 480×320 landscape logical orientation.
+
+After forcing the factory-test branch through JTAG, the physical display visibly produced:
+
+- RGB test patterns;
+- a black/white grayscale gradient.
+
+This is direct physical confirmation that the factory display path, ST7796 initialization and panel data path are operational on the reference specimen.
+
+### Factory audio path physically verified — Level A + B
+
+The verified factory image contains a valid embedded MP3 asset:
+
+```text
+DROM start: 0x3C089988
+DROM end:   0x3C0D0EED
+size:       0x47565 = 292197 bytes
+```
+
+Recovered metadata:
+
+- MP3;
+- 44.1 kHz;
+- mono;
+- 128 kbit/s codec bitrate;
+- about 18.23 s duration.
+
+The factory-test runner reaches an audio launcher at:
+
+```text
+0x42007140  audio task launcher
+0x420070FC  audio task entry
+```
+
+Hardware breakpoints on the physical board confirmed both addresses are reached. Immediately after the MP3-bound loads, the live registers contained exactly:
+
+```text
+a3 = 0x3C089988   # MP3 start
+a2 = 0x3C0D0EED   # MP3 end
+a10 = 0x42007078   # callback/function pointer used by the task
+```
+
+After removing the breakpoint and resuming execution, the reference specimen **played the embedded audio through its onboard audio path and speaker**. This promotes factory-audio operation from static evidence to direct physical verification.
+
+### Factory test is production/operator oriented — Level A + B
+
+The firmware contains production-test strings including:
+
+```text
+Version v2.0
+Enter test mode
+IO Test
+SD Test
+USB Con
+USB Dis
+```
+
+After the audible and visual tests completed, both cores were sampled through JTAG at `PC = 0x42068AD2`, in the system idle/WAITI path. Therefore the final RGB/gradient image is not evidence that the CPU is stuck waiting for a touch action; the active factory-test sequence has returned and the screen is left displaying its final visual inspection pattern while FreeRTOS idles.
+
+The remaining factory-test functions following the audio stage are still to be mapped individually:
+
+```text
+0x420069C0
+0x42006AAC
+0x42006D14
+0x42006DF0
+0x42006E54
+0x42006FC0
+```
+
+These are candidates for the remaining LCD/IO/SD/USB production checks and should be identified by further static disassembly plus controlled JTAG breakpoints.
+
+### Current verified conclusions
+
+For the reference specimen, the following are now established without reflashing the device:
+
+- built-in ESP32-S3 USB Serial/JTAG works;
+- verified factory code executes at the recovered addresses;
+- the normal boot skips a hidden `0xFF`-gated factory-test branch;
+- the hidden factory test can be reached by volatile JTAG state manipulation;
+- ST7796 factory display initialization is operational;
+- RGB and grayscale LCD test patterns are physically visible;
+- the factory audio task is created and executed;
+- the embedded MP3 bounds recovered from flash are used by the live task;
+- onboard audio playback and speaker output work;
+- after the production-test sequence, the firmware reaches the normal FreeRTOS idle/WAITI path;
+- the 16 MiB factory flash was **not modified** during the experiment.
+
 ## Repository philosophy
 
 1. **Identify before assuming.** Every physical board gets a passport.
@@ -105,20 +268,22 @@ WT32-SC01-PLUS-Lab/
 |---|---|---|
 | HW-00 | Photograph and identify the specimen | IN PROGRESS |
 | HW-01 | Chip / flash / PSRAM / factory backup | **PASS** |
-| HW-02 | Display bus and controller | TODO |
+| HW-02 | Display bus and controller | **PASS — factory-fw/JTAG verified** |
 | HW-03 | Touch controller and coordinates | TODO |
-| HW-04 | Backlight / buttons / onboard I/O | TODO |
+| HW-04 | Backlight / buttons / onboard I/O | IN PROGRESS |
 | HW-05 | Storage | TODO |
-| HW-06 | Audio | TODO |
+| HW-06 | Audio | **PASS — factory-fw/JTAG verified** |
 | HW-07 | Wi-Fi / BLE | TODO |
 | HW-08 | Expansion connectors / exposed GPIO | TODO |
 | HW-09 | Integrated LVGL/UI stress test | TODO |
 
 ## Important
 
-The repository is intentionally conservative at bootstrap. Pin assignments, display controller, touch controller and memory configuration must be confirmed for the **Panlee ZX3D50CE08S-V15-USRC** specimen before they are promoted into a default board profile.
+The repository remains conservative about cross-board defaults. Pin assignments, controller identity and peripheral behavior verified on the **Panlee ZX3D50CE08S-V15-USRC 230208** specimen must not be generalized automatically to every WT32-SC01-PLUS/OEM revision.
 
-Binary analysis of the verified factory firmware provides strong evidence for a 480×320 ST7796/8080 display stack and an FT5x06-family touch driver, but HW-02/HW-03 remain open until the physical hardware is verified independently.
+For the reference specimen, HW-02 is now physically verified through the original factory firmware plus JTAG-controlled execution: the ST7796 path initializes successfully and produces visible RGB and grayscale test patterns. HW-03 remains open: the factory binary and runtime GPIO evidence strongly support an FT5x06-family touch path with interrupt activity on GPIO7, but touch coordinates and behavior have not yet been independently exercised.
+
+HW-06 is also physically verified through the original factory firmware: the recovered audio task consumes the embedded MP3 and produces audible speaker output on the reference specimen.
 
 ## License
 
