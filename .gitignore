@@ -11,6 +11,11 @@ secrets.h
 __pycache__/
 *.pyc
 
+# ESP-IDF generated local state. Keep sdkconfig.defaults under version control.
+build/
+sdkconfig
+sdkconfig.old
+
 # Local board identity captures may contain MAC addresses, eFuse data,
 # host paths, serial-port details and other specimen-specific information.
 board-info/
