@@ -1,0 +1,10 @@
+# ESP-IDF 6.0.2 minimal project defaults for the verified reference specimen.
+# Generated initially with: idf.py save-defconfig
+#
+# The following three settings are sufficient to reproduce the current
+# 00_identity_probe configuration. Quad/Auto/40 MHz PSRAM settings resolve to
+# ESP-IDF defaults after CONFIG_SPIRAM=y for ESP32-S3 in this IDF release.
+
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_SPIRAM=y
