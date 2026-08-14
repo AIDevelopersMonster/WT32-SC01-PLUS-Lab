@@ -154,6 +154,10 @@ class OpenOcdClient:
         self.command("reset halt", timeout=5.0)
         self.wait_halt(timeout=5.0)
 
+    def reset_run(self) -> None:
+        """Perform a normal reset and let the target execute without PC/register edits."""
+        self.command("reset run", timeout=5.0)
+
     def halt(self) -> None:
         self.command("halt", timeout=3.0)
         self.wait_halt(timeout=3.0)
