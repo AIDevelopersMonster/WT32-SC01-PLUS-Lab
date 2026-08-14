@@ -9,6 +9,7 @@ from tests import FactoryStage
 
 ENTRY_GATE = 0x4200690E
 RUNNER_START = 0x42007060
+RUNNER_RETURN = 0x42007075
 FACTORY_ENTRY_ATTEMPTS = 3
 
 
@@ -73,7 +74,7 @@ class FactoryRunner:
 
         Each attempt starts from reset and performs no volatile selector injection
         until ENTRY_GATE is reached and the known firmware signatures are verified.
-        A failed attempt is therefore safe to abandon and retry.  Flash/eFuses are
+        A failed attempt is therefore safe to abandon and retry. Flash/eFuses are
         never written.
         """
         last_error: Exception | None = None
@@ -136,7 +137,7 @@ class FactoryRunner:
     def _can_reuse_current_stage_boundary(self, stage: FactoryStage) -> bool:
         """Return True only for an exact halted PC match to this stage entry.
 
-        This supports deterministic chaining such as DISPLAY -> TOUCH.  A previous
+        This supports deterministic chaining such as DISPLAY -> TOUCH. A previous
         successful stage leaves the target halted at its next boundary; when that
         boundary is exactly the next stage's entry there is no reason to reset and
         repeat the transient factory-entry gate.
@@ -186,6 +187,15 @@ class FactoryRunner:
         return f"{stage.key.upper()} stage returned at 0x{stage.next_pc:08X}"
 
     def _run_audio(self, stage: FactoryStage, *, audio_observe_seconds: float) -> str:
+        """Launch the asynchronous MP3 task without entering DISPLAY afterwards.
+
+        The stock runner calls AUDIO at 0x42007060 and then immediately calls
+        DISPLAY from 0x42007063. Once the audio launcher has returned, the audio
+        work lives in its own task and needs the scheduler to keep running. We
+        therefore skip the remaining factory calls by executing the runner's own
+        natural return instruction at 0x42007075, then let the system run for the
+        operator observation window.
+        """
         if audio_observe_seconds <= 0:
             raise ValueError("audio observation time must be positive")
 
@@ -194,6 +204,11 @@ class FactoryRunner:
         self._wait_at(stage.next_pc, "audio launcher return", stage.timeout)
         self.client.clear_breakpoints()
 
+        print(
+            f"[JTAG] isolate audio: skip remaining factory calls via runner return "
+            f"0x{RUNNER_RETURN:08X}"
+        )
+        self.client.write_reg("pc", RUNNER_RETURN)
         self.client.resume()
         try:
             time.sleep(audio_observe_seconds)
@@ -202,6 +217,7 @@ class FactoryRunner:
             self.client.clear_breakpoints()
 
         return (
-            f"AUDIO task launched; target ran for {audio_observe_seconds:.1f} s observation window. "
+            f"AUDIO task launched in isolation; remaining factory stages skipped; "
+            f"target ran for {audio_observe_seconds:.1f} s observation window. "
             "Physical playback completion remains operator-observed."
         )
