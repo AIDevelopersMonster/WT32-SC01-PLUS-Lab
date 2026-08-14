@@ -2,21 +2,27 @@
 
 Second executable hardware-validation firmware for the reference **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208** specimen.
 
-**Current status:** `READY FOR BUILD / NOT YET PHYSICALLY VALIDATED`
+**Current status:** `PASS — PHYSICALLY VALIDATED`
 
 This test is deliberately narrower than an LVGL demo. It validates only the LCD path: ESP32-S3 I80 bus, ST7796 initialization, backlight and visible RGB565 output. Touch, TE synchronization, SD, audio, RS-485, Wi-Fi and BLE are not initialized.
 
-## Evidence basis
+Physical validation protocol:
 
-For this exact specimen, the verified factory firmware contains:
+- [`../../evidence/specimens/panlee-v15-230208-sample-a/01_display_test/README.md`](../../evidence/specimens/panlee-v15-230208-sample-a/01_display_test/README.md)
+
+## Evidence basis and result
+
+For this exact specimen, the verified factory firmware had already established strong evidence for:
 
 - ST7796 driver strings and code;
 - an ESP32-S3 8080 LCD bus implementation;
 - a 480x320 embedded display resource;
-- a physical factory LCD test that successfully showed RGB/grayscale patterns and red/green/blue full-screen states;
+- a physical factory LCD test;
 - a physically observed `MADCTL=0x28`, consistent with BGR plus axis swap for 480x320 landscape operation.
 
-The working pin hypothesis used here is independently published for the WT32-SC01-PLUS family and is now being tested directly on this specimen:
+`01_display_test` then independently initialized and drove the real display from ESP-IDF 6.0.2. The operator visually confirmed correct repeated pattern operation, so HW-02 is now PASS for this specimen.
+
+## Physically validated display pin map
 
 | Signal | GPIO |
 |---|---:|
@@ -33,9 +39,9 @@ The working pin hypothesis used here is independently published for the WT32-SC0
 | D5 | 17 |
 | D6 | 16 |
 | D7 | 15 |
-| CS | `-1` — treated as tied/always selected |
+| CS | `-1` — tied/always selected in this test model |
 
-**Evidence ceiling:** until this firmware is run and visually confirmed on the reference specimen, the mapping above remains a test hypothesis supported by factory RE + family documentation, not a new direct HW-02 PASS.
+The actively used LCD mapping above is now direct physical evidence for `panlee-v15-230208-sample-a`. TE itself remains unvalidated because this test does not use it.
 
 ## Software configuration
 
@@ -45,7 +51,7 @@ The project deliberately does **not** keep a separate `sdkconfig.defaults` copy.
 software/espressif/config/panlee-v15-230208-sample-a.idf6.0.2.sdkconfig.defaults
 ```
 
-That profile currently establishes:
+That profile establishes:
 
 ```text
 CONFIG_IDF_TARGET="esp32s3"
@@ -53,15 +59,15 @@ CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPIRAM=y
 ```
 
-The ST7796 driver is pulled from Espressif Component Registry as:
+The ST7796 driver is pinned through ESP-IDF Component Manager as:
 
 ```yaml
 espressif/esp_lcd_st7796: "1.4.0"
 ```
 
-## First-run choices
+## Validated first-run settings
 
-These are conservative test settings, not yet board-family guarantees:
+The following settings worked on the reference specimen during this test:
 
 - I80 width: 8 bit;
 - I80 pixel clock: **10 MHz**;
@@ -74,6 +80,8 @@ These are conservative test settings, not yet board-family guarantees:
 - draw buffer: 20 lines in internal DMA-capable RAM.
 
 BGR (`0x08`) plus ST7796 MV/axis-swap (`0x20`) is intended to reproduce the physically observed `MADCTL=0x28` state.
+
+These are validated operating settings for this specimen, not a claim about maximum panel speed or every OEM revision.
 
 ## Visual test sequence
 
@@ -102,21 +110,18 @@ The final geometry screen should show:
 
 It also contains a cyan outer border and a gray 40-pixel grid.
 
-## Physical PASS criteria
+## Physical PASS criteria — satisfied
 
-Mark `01_display_test` PASS only when the reference specimen visibly demonstrates all of the following:
+The reference specimen visibly demonstrated the intended recurring test screens, while the serial log repeatedly completed all eight patterns without LCD DMA timeout, panic, watchdog reset or controller initialization error.
 
-- the backlight turns on after LCD initialization;
-- the full active area is used;
-- black, white, red, green and blue are visually correct;
-- the eight color bars are stable and distinct;
-- grayscale progresses monotonically without gross color tinting;
-- geometry orientation is correct: TL red, TR green, BL blue, BR white;
-- cyan border reaches all four edges;
-- no persistent missing bands, corrupted regions or obvious stuck data bits;
-- no gross flicker or repeated controller resets.
+PASS therefore covers:
 
-A wrong rotation, swapped red/blue, missing data lines or unstable image is an **investigation result**, not an excuse to change several parameters simultaneously. Change one variable at a time and preserve the failed observation.
+- backlight operation after LCD initialization;
+- active display output over the full intended 480x320 landscape area;
+- black, white, red, green and blue output;
+- color bars and grayscale pattern output;
+- orientation/geometry diagnostic output;
+- repeated stable I80 transfers at 10 MHz during the observed run.
 
 ## Build
 
@@ -129,19 +134,17 @@ idf.py fullclean
 idf.py build
 ```
 
-On the first build, ESP-IDF Component Manager may download the official ST7796 component.
-
-Do not flash until the build completes successfully and the generated flash command has been inspected.
+On the first build, ESP-IDF Component Manager may download the pinned ST7796 component and its dependencies.
 
 ## Flash and monitor
-
-After a successful build:
 
 ```powershell
 idf.py -p COM10 flash monitor
 ```
 
-Exit `idf_monitor` with:
+The firmware intentionally loops forever through the visual patterns.
+
+To exit only `idf_monitor`:
 
 ```text
 Ctrl+]
@@ -149,22 +152,24 @@ Ctrl+]
 
 or `Ctrl+T`, then `Ctrl+X`.
 
-## Evidence after the physical run
+Exiting the monitor does **not** stop the display loop. To stop the firmware itself, remove power or flash another application. RESET simply starts this same test again from the beginning.
 
-Store the validation protocol under:
+## Evidence
+
+Canonical physical-run protocol:
 
 ```text
-evidence/specimens/panlee-v15-230208-sample-a/01_display_test/
+evidence/specimens/panlee-v15-230208-sample-a/01_display_test/README.md
 ```
 
-Record at minimum:
+The protocol records application/tool versions, pin map, I80 settings, build/boot results, visual sequence, operator confirmation, stop behavior and claim boundaries.
 
-- application commit/version;
-- ESP-IDF and ST7796 component versions;
-- exact pin map and I80 clock;
-- complete boot/serial log;
-- visual observations for every pattern;
-- photo/video if available;
-- final PASS / INVESTIGATE result.
+## Claim boundary
 
-Do not promote HW-02 to PASS before the visible panel result is confirmed.
+This PASS belongs specifically to `panlee-v15-230208-sample-a`. It does not yet validate:
+
+- touch-controller identity or coordinates;
+- TE synchronization;
+- maximum stable I80 clock;
+- LVGL integration;
+- all WT32-SC01-PLUS OEM or PCB revisions.
