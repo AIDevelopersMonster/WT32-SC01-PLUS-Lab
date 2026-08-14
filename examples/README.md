@@ -1,11 +1,11 @@
 # Examples
 
-Planned progression:
+Hardware-validation progression for the reference WT32-SC01-PLUS specimen:
 
 | Directory | Purpose | Status |
 |---|---|---|
-| `00_identity_probe` | MCU, flash, PSRAM, reset reason, heap | TODO |
-| `01_display_test` | display initialization and patterns | BLOCKED BY HW ID |
+| `00_identity_probe` | MCU, flash, PSRAM, reset reason, heap | **PASS — physical specimen** |
+| `01_display_test` | ST7796/I80 initialization and visual patterns | **PASS — physical specimen** |
 | `02_touch_test` | raw touch and calibration | BLOCKED BY HW ID |
 | `03_storage_test` | safe read-only storage probe | BLOCKED BY HW ID |
 | `04_wifi_test` | Wi-Fi scan/connectivity | TODO |
@@ -14,4 +14,6 @@ Planned progression:
 | `07_expansion_io_test` | safe GPIO/connector checks | BLOCKED BY PINOUT |
 | `08_lvgl_demo` | integrated LVGL demo | BLOCKED BY DISPLAY+TOUCH |
 
-Each example should have its own README containing prerequisites, expected output, safety notes and hardware status.
+Each example has its own README containing prerequisites, expected output, safety notes and hardware/evidence status.
+
+A status is promoted to **PASS** only after the relevant firmware has been run on the named physical specimen and the required observations have been recorded under `evidence/`.
