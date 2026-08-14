@@ -48,22 +48,36 @@ class FactoryRunner:
             )
 
     def prepare_factory_runner(self) -> list[SignatureResult]:
-        """Reach the factory gate by normal execution, verify firmware, then inject RAM state.
+        """Reach ENTRY_GATE by normal execution before any volatile state injection.
 
-        Important: do not verify flash-mapped IROM immediately after ``reset halt``.
-        On this ESP32-S3/OpenOCD setup the MMU/cache mapping may not yet be restored,
-        and reads can return the OpenOCD inaccessible-memory sentinel 0xBAD0BAD0.
-        A hardware breakpoint is therefore armed first, followed by a normal reset/run.
-        Firmware signatures are checked only after the application reaches ENTRY_GATE.
+        The verified sequence for this target is:
+
+            reset halt
+            arm hardware breakpoint at ENTRY_GATE
+            resume
+            wait for ENTRY_GATE
+            verify flash-mapped firmware signatures
+            inject only the recovered volatile selector state
+
+        We intentionally do not read the flash-mapped IROM while still halted in
+        reset/ROM state.  On this ESP32-S3/OpenOCD setup such reads may return the
+        inaccessible-memory sentinel pattern 0xBAD0BAD0 before the application
+        restores its MMU/cache mapping.
+
+        We also intentionally do not arm the breakpoint before a subsequent
+        reset: the ESP32-S3 reset path may clear the hardware breakpoint state.
         """
         self.client.clear_breakpoints()
+        self.client.reset_halt()
+
+        # Do not verify IROM yet: flash/MMU mapping may not be live at reset halt.
         self.client.set_hw_breakpoint(ENTRY_GATE)
-        self.client.reset_run()
+        self.client.resume()
         self.client.wait_halt(timeout=5.0)
         self._assert_pc(ENTRY_GATE, "factory entry gate")
 
-        # At ENTRY_GATE the application flash mapping is live.  Verify the exact
-        # known firmware before changing any register, RAM byte or PC.
+        # The application reached ENTRY_GATE under its own execution, so the
+        # flash mapping is live.  Verify the known image before touching state.
         results = self.verify_firmware()
 
         stack_ptr = self.client.read_reg("a1")
