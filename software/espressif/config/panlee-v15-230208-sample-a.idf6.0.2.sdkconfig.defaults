@@ -1,0 +1,9 @@
+# WT32-SC01-PLUS-Lab validated ESP-IDF profile
+# Specimen: panlee-v15-230208-sample-a
+# Board: Panlee / ZX3D50CE08S-V15-USRC / 230208
+# ESP-IDF: v6.0.2
+# Validation: 00_identity_probe PASS on physical hardware, 2026-08-14
+
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_SPIRAM=y
