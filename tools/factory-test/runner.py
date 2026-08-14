@@ -48,14 +48,23 @@ class FactoryRunner:
             )
 
     def prepare_factory_runner(self) -> list[SignatureResult]:
-        self.client.clear_breakpoints()
-        self.client.reset_halt()
-        results = self.verify_firmware()
+        """Reach the factory gate by normal execution, verify firmware, then inject RAM state.
 
+        Important: do not verify flash-mapped IROM immediately after ``reset halt``.
+        On this ESP32-S3/OpenOCD setup the MMU/cache mapping may not yet be restored,
+        and reads can return the OpenOCD inaccessible-memory sentinel 0xBAD0BAD0.
+        A hardware breakpoint is therefore armed first, followed by a normal reset/run.
+        Firmware signatures are checked only after the application reaches ENTRY_GATE.
+        """
+        self.client.clear_breakpoints()
         self.client.set_hw_breakpoint(ENTRY_GATE)
-        self.client.resume()
+        self.client.reset_run()
         self.client.wait_halt(timeout=5.0)
         self._assert_pc(ENTRY_GATE, "factory entry gate")
+
+        # At ENTRY_GATE the application flash mapping is live.  Verify the exact
+        # known firmware before changing any register, RAM byte or PC.
+        results = self.verify_firmware()
 
         stack_ptr = self.client.read_reg("a1")
         self.client.write_reg("a10", 1)
