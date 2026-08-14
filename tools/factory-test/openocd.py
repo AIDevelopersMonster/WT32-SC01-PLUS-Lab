@@ -17,7 +17,13 @@ class TargetStatus:
 
 
 class OpenOcdClient:
-    """Small synchronized client for the OpenOCD telnet command port."""
+    """Small synchronized client for the OpenOCD telnet command port.
+
+    ESP32-S3 OpenOCD may asynchronously change the current target between
+    cpu0/cpu1 when the SMP target halts.  FactoryCTL is deliberately tied to the
+    recovered factory path on the configured target (cpu0 by default), so every
+    target-specific operation re-selects that target first.
+    """
 
     def __init__(
         self,
@@ -46,7 +52,7 @@ class OpenOcdClient:
             self.sock = socket.create_connection((self.host, self.port), timeout=self.timeout)
             self.sock.settimeout(0.25)
             self._read_prompt(timeout=self.timeout)
-            self.command(f"targets {self.target}")
+            self.select_target()
         except OSError as exc:
             self.close()
             raise OpenOcdError(
@@ -90,9 +96,6 @@ class OpenOcdClient:
 
     @staticmethod
     def _clean_terminal_text(text: str) -> str:
-        # OpenOCD telnet can emit terminal-editing backspaces together with
-        # asynchronous target-selection/status messages.  They are harmless but
-        # must not confuse command-specific parsers.
         while "\x08" in text:
             text = re.sub(r"[^\n]\x08", "", text)
             text = text.replace("\x08", "")
@@ -135,6 +138,10 @@ class OpenOcdClient:
             lines.pop(0)
         return "\n".join(lines).strip()
 
+    def select_target(self) -> None:
+        """Re-select the configured CPU before a target-specific operation."""
+        self.command(f"targets {self.target}")
+
     def target_status(self) -> TargetStatus:
         last_raw = ""
         for _ in range(3):
@@ -165,25 +172,31 @@ class OpenOcdClient:
         raise OpenOcdError(f"Target did not halt within {timeout:.1f} seconds")
 
     def reset_halt(self) -> None:
+        self.select_target()
         self.command("reset halt", timeout=5.0)
         self.wait_halt(timeout=5.0)
 
     def reset_run(self) -> None:
-        """Perform a normal reset and let the target execute without PC/register edits."""
+        self.select_target()
         self.command("reset run", timeout=5.0)
 
     def halt(self) -> None:
+        self.select_target()
         self.command("halt", timeout=3.0)
         self.wait_halt(timeout=3.0)
 
     def resume(self) -> None:
+        self.select_target()
         self.command("resume", timeout=3.0)
 
     def clear_breakpoints(self) -> None:
+        self.select_target()
         self.command("rbp all")
 
     def set_hw_breakpoint(self, address: int) -> None:
+        self.select_target()
         self.command(f"bp 0x{address:08x} 2 hw")
+        self.select_target()
         listing = self.command("bp")
         if f"{address:08x}" not in listing.lower():
             raise OpenOcdError(
@@ -191,12 +204,9 @@ class OpenOcdClient:
             )
 
     def read_reg(self, name: str) -> int:
-        # The ESP32-S3 OpenOCD build can asynchronously print messages such as
-        # "Set GDB target to 'esp32s3.cpu0'" between a halt notification and the
-        # requested register response.  Retry a few times rather than treating
-        # that unsolicited line as a register-read failure.
         outputs: list[str] = []
         for _ in range(4):
+            self.select_target()
             out = self.command(f"reg {name}")
             outputs.append(out)
             values = re.findall(r"0x[0-9a-fA-F]+", out)
@@ -209,6 +219,7 @@ class OpenOcdClient:
         )
 
     def write_reg(self, name: str, value: int, *, verify: bool = True) -> None:
+        self.select_target()
         self.command(f"reg {name} 0x{value:x}")
         if verify:
             actual = self.read_reg(name)
@@ -218,6 +229,7 @@ class OpenOcdClient:
                 )
 
     def read_bytes(self, address: int, count: int) -> bytes:
+        self.select_target()
         out = self.command(f"mdb 0x{address:08x} {count}")
         values: list[int] = []
         for line in out.splitlines():
@@ -235,6 +247,7 @@ class OpenOcdClient:
     def write_byte(self, address: int, value: int, *, verify: bool = True) -> None:
         if not 0 <= value <= 0xFF:
             raise ValueError("byte value must be in range 0..255")
+        self.select_target()
         self.command(f"mwb 0x{address:08x} 0x{value:02x}")
         if verify:
             actual = self.read_bytes(address, 1)[0]
