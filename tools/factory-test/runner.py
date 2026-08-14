@@ -187,14 +187,14 @@ class FactoryRunner:
         return f"{stage.key.upper()} stage returned at 0x{stage.next_pc:08X}"
 
     def _run_audio(self, stage: FactoryStage, *, audio_observe_seconds: float) -> str:
-        """Launch the asynchronous MP3 task without entering DISPLAY afterwards.
+        """Launch the asynchronous MP3 task and observe physical playback.
 
-        The stock runner calls AUDIO at 0x42007060 and then immediately calls
-        DISPLAY from 0x42007063. Once the audio launcher has returned, the audio
-        work lives in its own task and needs the scheduler to keep running. We
-        therefore skip the remaining factory calls by executing the runner's own
-        natural return instruction at 0x42007075, then let the system run for the
-        operator observation window.
+        The direct DISPLAY/TOUCH/IO/SD/USB/OK calls in the recovered factory runner
+        are skipped by moving from the audio-launcher return boundary to the
+        runner's own return instruction.  This does NOT freeze every other task or
+        UI path in the application: after the runner returns, other application
+        code may continue writing to the LCD.  Therefore this mode certifies audio
+        playback, not an invariant or blank display state.
         """
         if audio_observe_seconds <= 0:
             raise ValueError("audio observation time must be positive")
@@ -205,9 +205,10 @@ class FactoryRunner:
         self.client.clear_breakpoints()
 
         print(
-            f"[JTAG] isolate audio: skip remaining factory calls via runner return "
+            f"[JTAG] skip direct remaining factory-stage calls via runner return "
             f"0x{RUNNER_RETURN:08X}"
         )
+        print("[JTAG] note: other application/UI tasks may still update the LCD")
         self.client.write_reg("pc", RUNNER_RETURN)
         self.client.resume()
         try:
@@ -217,7 +218,7 @@ class FactoryRunner:
             self.client.clear_breakpoints()
 
         return (
-            f"AUDIO task launched in isolation; remaining factory stages skipped; "
+            f"AUDIO task launched; direct remaining factory-stage calls skipped; "
             f"target ran for {audio_observe_seconds:.1f} s observation window. "
-            "Physical playback completion remains operator-observed."
+            "Physical playback is operator-observed; LCD state is not certified."
         )
