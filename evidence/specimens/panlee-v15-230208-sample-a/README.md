@@ -14,6 +14,7 @@ Reference markings:
 | HW-01 | **PASS** | [`hw01-chip/factory-flash-analysis.md`](hw01-chip/factory-flash-analysis.md), [`00_identity_probe/README.md`](00_identity_probe/README.md) |
 | HW-02 | **PASS** | [`01_display_test/README.md`](01_display_test/README.md) |
 | HW-03 | TODO | touch hardware validation |
+| HW-04 | **PASS — read path; media anomaly observed** | [`03_storage_test/README.md`](03_storage_test/README.md) |
 
 ## HW-01 verified facts
 
@@ -57,5 +58,24 @@ Validated for this specimen at the test settings:
 - repeated solid-color, color-bar, grayscale and orientation/geometry output.
 
 TE GPIO48 was not exercised and remains outside the HW-02 PASS claim.
+
+## HW-04 verified storage facts
+
+`03_storage_test` independently initialized and read a real SDHC card through SDSPI without mounting a filesystem or writing card data.
+
+Validated for this specimen at the test settings:
+
+- SD CLK GPIO39;
+- SD MOSI GPIO40;
+- SD MISO GPIO38;
+- SD CS GPIO41;
+- SDSPI operation at 10 MHz;
+- SDHC initialization;
+- sector 0 read;
+- MBR parsing;
+- first partition boot-sector read;
+- normal completion without panic/watchdog/read timeout.
+
+The inserted media reported `106496000` CSD-addressable sectors while its MBR partition extends to sector `125829120` exclusive. The board-side read path therefore remains PASS, while the SD card / partition geometry is recorded separately as a media anomaly. See the canonical storage evidence protocol for details.
 
 The vendor firmware binary itself is kept outside the public Git repository until redistribution rights are established.
