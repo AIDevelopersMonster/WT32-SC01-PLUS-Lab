@@ -23,7 +23,7 @@ This is intentionally **not** a copy of the factory firmware. Factory reverse en
 | Backlight | **PHYSICAL PASS** | PWM brightness test accepted |
 | Touch | PENDING | Next validation increment |
 | SD | PENDING | Next validation increment |
-| Audio | PENDING | Experimental I2S test follows display merge |
+| Audio | **EXPERIMENTAL TEST READY** | GPIO35/36/37 candidate mapping; physical V15 acceptance required |
 | RS485 | PENDING | Not yet promoted into BSP |
 | Combined SelfTest | PENDING | Built only from individually validated drivers |
 
@@ -60,13 +60,45 @@ This promotes the display/backlight slice from experimental bring-up to **valida
 
 Display parameters: **480 x 320**, RGB565, 8-bit I80, **10 MHz** write clock.
 
+## Experimental audio mapping
+
+The current audio experiment uses these candidate I2S pins:
+
+| Signal | GPIO | Status |
+|---|---:|---|
+| LRCK / WS | 35 | experimental on V15 |
+| BCLK | 36 | experimental on V15 |
+| DOUT | 37 | experimental on V15 |
+
+The mapping agrees with public WT32-SC01 Plus references, including a Panlee V13 I2S demo, but it is deliberately **not marked validated for the V15/230208 specimen yet**.
+
+`05_AudioTest` is an isolated stability test. It does not initialize LCD, touch, Wi-Fi, LVGL, SD or RS485. It generates controlled PCM tone bursts rather than playing the factory MP3 and continuously reports Serial/heap diagnostics so that USB-Serial loss, panic, watchdog or brownout resets are easier to identify.
+
+Audio physical PASS requires:
+
+1. I2S initializes without reboot;
+2. low/medium/normal tone bursts are audible;
+3. the 10-second 1 kHz stress tone completes;
+4. Serial heartbeat remains continuous during PCM transfer;
+5. COM does not disappear because of controller reset;
+6. post-test heartbeat continues after I2S deinitialization;
+7. if a reset occurs, its reported reset reason is recorded instead of treating the test as PASS.
+
+Only after physical acceptance should GPIO35/36/37 be promoted into the validated Panlee V15 profile.
+
 ## Arduino IDE
 
-Copy or junction `libraries/WT32_SC01_PLUS` into your Arduino libraries directory, restart Arduino IDE, and open:
+Copy or junction `libraries/WT32_SC01_PLUS` into your Arduino libraries directory and restart Arduino IDE if necessary.
+
+Validated display example:
 
 `File -> Examples -> WT32_SC01_PLUS -> 01_DisplayTest`
 
-For the validated specimen select **ESP32S3 Dev Module**, choose the correct serial port, compile, upload, and open Serial Monitor at 115200 baud.
+Experimental audio example:
+
+`File -> Examples -> WT32_SC01_PLUS -> 05_AudioTest`
+
+For the reference specimen select **ESP32S3 Dev Module**, choose the correct serial port, compile, upload, and open Serial Monitor at 115200 baud.
 
 Selecting the generic `ESP32 Dev Module` is incorrect for this board and causes `esptool` to reject the ESP32-S3 during upload.
 
