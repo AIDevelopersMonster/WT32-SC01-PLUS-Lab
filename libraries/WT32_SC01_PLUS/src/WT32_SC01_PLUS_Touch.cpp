@@ -9,6 +9,21 @@ constexpr uint8_t REG_CHIP_CODE = 0xA0;
 constexpr uint8_t REG_FIRMWARE_ID = 0xA6;
 constexpr uint8_t REG_FOCALTECH_ID = 0xA8;
 constexpr uint8_t FT6336U_CHIP_CODE = 0x02;
+
+bool decodePoint(const uint8_t *raw, WT32_SC01_PLUS_TouchPoint &point) {
+    point = WT32_SC01_PLUS_TouchPoint{};
+    point.event = (raw[0] >> 6) & 0x03;
+    point.rawX = (static_cast<uint16_t>(raw[0] & 0x0F) << 8) | raw[1];
+    point.trackId = (raw[2] >> 4) & 0x0F;
+    point.rawY = (static_cast<uint16_t>(raw[2] & 0x0F) << 8) | raw[3];
+
+    if (point.rawX > 319 || point.rawY > 479) return false;
+
+    point.x = point.rawY;
+    point.y = 319U - point.rawX;
+    point.touched = true;
+    return true;
+}
 }
 
 bool WT32_SC01_PLUS_Touch::readReg(uint8_t reg, uint8_t *data, size_t len) {
@@ -42,8 +57,6 @@ bool WT32_SC01_PLUS_Touch::begin() {
     }
     Wire1.setTimeOut(50);
 
-    // GPIO4 is shared by LCD and touch reset. Do not pulse it here: the normal
-    // integrated sequence is board.begin() -> wait -> touch.begin().
     if (!readReg(REG_CHIP_CODE, &chipCode_, 1)) return false;
     if (!readReg(REG_FIRMWARE_ID, &firmwareId_, 1)) return false;
     if (!readReg(REG_FOCALTECH_ID, &focalTechId_, 1)) return false;
@@ -54,31 +67,38 @@ bool WT32_SC01_PLUS_Touch::begin() {
     return true;
 }
 
+bool WT32_SC01_PLUS_Touch::readPoints(WT32_SC01_PLUS_TouchPoint *points,
+                                      uint8_t capacity,
+                                      uint8_t &count) {
+    count = 0;
+    if (!ready_ || !points || capacity == 0) return false;
+
+    // Read status plus both FT6336U point slots as one coherent frame:
+    // 0x02 TD_STATUS, 0x03..0x08 P1, 0x09..0x0E P2.
+    uint8_t frame[13] = {0};
+    if (!readReg(REG_TD_STATUS, frame, sizeof(frame))) return false;
+
+    const uint8_t reported = frame[0] & 0x0F;
+    if (reported == 0) return true;
+    if (reported > 2) return false;
+
+    const uint8_t usable = reported < capacity ? reported : capacity;
+    for (uint8_t i = 0; i < usable; ++i) {
+        const uint8_t *slot = &frame[1 + static_cast<size_t>(i) * 6U];
+        if (!decodePoint(slot, points[count])) continue;
+        ++count;
+    }
+
+    return true;
+}
+
 bool WT32_SC01_PLUS_Touch::read(WT32_SC01_PLUS_TouchPoint &point) {
+    WT32_SC01_PLUS_TouchPoint points[2];
+    uint8_t count = 0;
+    if (!readPoints(points, 2, count)) return false;
     point = WT32_SC01_PLUS_TouchPoint{};
-    if (!ready_) return false;
-
-    uint8_t status = 0;
-    if (!readReg(REG_TD_STATUS, &status, 1)) return false;
-
-    const uint8_t points = status & 0x0F;
-    if (points == 0) return true;
-    if (points > 2) return false;
-
-    uint8_t raw[6] = {0};
-    if (!readReg(REG_P1_XH, raw, sizeof(raw))) return false;
-
-    point.event = (raw[0] >> 6) & 0x03;
-    point.rawX = (static_cast<uint16_t>(raw[0] & 0x0F) << 8) | raw[1];
-    point.trackId = (raw[2] >> 4) & 0x0F;
-    point.rawY = (static_cast<uint16_t>(raw[2] & 0x0F) << 8) | raw[3];
-
-    // Physically validated Panlee V15 / 230208 landscape transform:
-    // LCD_X = raw_Y, LCD_Y = 319 - raw_X.
-    if (point.rawX > 319 || point.rawY > 479) return false;
-    point.x = point.rawY;
-    point.y = 319U - point.rawX;
-    point.touched = true;
+    if (count == 0) return true;
+    point = points[0];
     return true;
 }
 
