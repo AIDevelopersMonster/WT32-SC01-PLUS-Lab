@@ -33,11 +33,27 @@ private:
     bool ready_ = false;
 };
 
+class WT32_SC01_PLUS_Audio {
+public:
+    bool begin(uint32_t sampleRate = 44100);
+    void end();
+    bool tone(uint32_t frequencyHz, uint32_t durationMs, uint8_t amplitudePercent = 10,
+              Stream *diagnostics = nullptr);
+    bool silence(uint32_t durationMs);
+    bool ready() const { return ready_; }
+    uint32_t sampleRate() const { return sampleRate_; }
+
+private:
+    bool ready_ = false;
+    uint32_t sampleRate_ = 0;
+};
+
 class WT32_SC01_PLUS {
 public:
     bool begin();
     WT32_SC01_PLUS_Display &display() { return display_; }
     WT32_SC01_PLUS_Backlight &backlight() { return backlight_; }
+    WT32_SC01_PLUS_Audio &audio() { return audio_; }
 
     const char *profileName() const;
     void printBoardInfo(Stream &out = Serial) const;
@@ -45,4 +61,5 @@ public:
 private:
     WT32_SC01_PLUS_Display display_;
     WT32_SC01_PLUS_Backlight backlight_;
+    WT32_SC01_PLUS_Audio audio_;
 };
