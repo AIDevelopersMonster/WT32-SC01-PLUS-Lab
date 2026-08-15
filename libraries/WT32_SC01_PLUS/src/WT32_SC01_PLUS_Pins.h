@@ -40,6 +40,14 @@ static constexpr int TOUCH_RST = 4;
 static constexpr uint8_t TOUCH_ADDR = 0x38;
 static constexpr uint32_t TOUCH_I2C_HZ = 400000;
 
+// PHYSICALLY VALIDATED on Panlee V15 / 230208 by independent ESP-IDF SDSPI read test.
+// Arduino write-path validation is intentionally separate.
+static constexpr int SD_SCK  = 39;
+static constexpr int SD_MOSI = 40;
+static constexpr int SD_MISO = 38;
+static constexpr int SD_CS   = 41;
+static constexpr uint32_t SD_SPI_HZ = 10000000;
+
 // PHYSICALLY VALIDATED on Panlee V15 / 230208 by high-power audio test.
 static constexpr int AUDIO_LRCK = 35;
 static constexpr int AUDIO_BCLK = 36;
