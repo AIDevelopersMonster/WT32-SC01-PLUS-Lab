@@ -48,6 +48,7 @@ class WT32_SC01_PLUS_Touch {
 public:
     bool begin();
     bool read(WT32_SC01_PLUS_TouchPoint &point);
+    bool readPoints(WT32_SC01_PLUS_TouchPoint *points, uint8_t capacity, uint8_t &count);
     bool ready() const { return ready_; }
     uint8_t chipCode() const { return chipCode_; }
     uint8_t firmwareId() const { return firmwareId_; }
