@@ -16,6 +16,7 @@ Start here:
 - [`tools/windows/wt32-sc01-plus-audit.ps1`](tools/windows/wt32-sc01-plus-audit.ps1) — read-only Windows host/USB audit with optional chip/flash identification.
 - [`docs/software/README.md`](docs/software/README.md) — software tools: what each tool is for and where to download it.
 - [`docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md`](docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md) — research snapshot of public WT32-SC01 Plus projects, stacks, complexity and reuse value.
+- [`docs/videos.md`](docs/videos.md) — project videos and YouTube Shorts grouped by subsystem.
 - [`evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md`](evidence/specimens/panlee-v15-230208-sample-a/hw01-chip/factory-flash-analysis.md) — verified HW-01 chip/memory/factory-flash analysis for the reference specimen.
 - **Issues -> New issue -> “Report your WT32-SC01-PLUS board”** — attach photos and the generated `.txt` report.
 
@@ -148,6 +149,7 @@ This repository therefore already contains a complete worked example of practica
 - [`docs/pinout.md`](docs/pinout.md) — pinout working document.
 - [`docs/software/README.md`](docs/software/README.md) — software/toolchain index with official download links.
 - [`docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md`](docs/research/wt32-sc01-plus-project-landscape-2026-08-13.md) — dated research report on the WT32-SC01 Plus project ecosystem.
+- [`docs/videos.md`](docs/videos.md) — project videos and YouTube Shorts.
 - [`tools/factory-test/README.md`](tools/factory-test/README.md) — recovered stock factory test and FactoryCTL.
 - [`evidence/specimens/panlee-v15-230208-sample-a/README.md`](evidence/specimens/panlee-v15-230208-sample-a/README.md) — specimen-specific acceptance evidence.
 - [`examples/README.md`](examples/README.md) — planned test sequence.
