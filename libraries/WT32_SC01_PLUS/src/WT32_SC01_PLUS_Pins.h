@@ -31,5 +31,10 @@ static constexpr int LCD_WIDTH  = 480;
 static constexpr int LCD_HEIGHT = 320;
 static constexpr int LCD_PCLK_HZ = 10000000;
 
+// PHYSICALLY VALIDATED on Panlee V15 / 230208 by high-power audio test.
+static constexpr int AUDIO_LRCK = 35;
+static constexpr int AUDIO_BCLK = 36;
+static constexpr int AUDIO_DOUT = 37;
+
 } // namespace pins
 } // namespace wt32sc01plus
