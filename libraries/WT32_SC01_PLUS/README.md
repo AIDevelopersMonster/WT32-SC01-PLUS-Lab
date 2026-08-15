@@ -21,7 +21,7 @@ This is intentionally **not** a copy of the factory firmware. Factory reverse en
 | Board identity | VALIDATED | Panlee V15 / 230208 specimen |
 | LCD | **PHYSICAL PASS** | ST7796, 480x320, I80 |
 | Backlight | **PHYSICAL PASS** | PWM brightness test accepted |
-| Touch | PENDING | Next validation increment |
+| Touch | **PHYSICAL PASS** | FT6336U-compatible, Wire1 @ 400 kHz, five-point landscape test passed |
 | SD | PENDING | Next validation increment |
 | Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; full high-power run completed |
 | Native USB Serial with audio | **PHYSICAL PASS** | Continuous Serial heartbeat through I2S stress and after deinit |
@@ -61,6 +61,43 @@ This promotes the display/backlight slice from experimental bring-up to **valida
 
 Display parameters: **480 x 320**, RGB565, 8-bit I80, **10 MHz** write clock.
 
+## Validated touch mapping
+
+| Signal | GPIO |
+|---|---:|
+| SDA | 6 |
+| SCL | 5 |
+| INT | 7 |
+| RST | 4 (shared with LCD reset) |
+
+Touch bus parameters:
+
+- `Wire1`
+- I2C address `0x38`
+- 400 kHz
+- FT6336U-compatible identity observed: chip code `0x02`, firmware ID `0x03`, FocalTech ID `0x11`
+
+The Arduino `02_TouchTest` was physically accepted on the Panlee V15 / 230208 specimen using a coherent `TD_STATUS + P1 + P2` frame read and requiring three consecutive hits per target.
+
+Five targets passed:
+
+```text
+TOP_LEFT     dx=-20 dy=17
+TOP_RIGHT    dx=-6  dy=22
+CENTER       dx=1   dy=22
+BOTTOM_LEFT  dx=0   dy=30
+BOTTOM_RIGHT dx=-5  dy=13
+```
+
+The physically validated landscape mapping is:
+
+```text
+LCD_X = raw_Y
+LCD_Y = 319 - raw_X
+```
+
+This certifies the Arduino I2C touch path, FT6336U-compatible identity, coherent point-frame reads and the simple landscape transform for the reference specimen. It is not a precision edge calibration claim and should not be generalized automatically to every WT32-SC01-PLUS OEM revision.
+
 ## Validated audio mapping
 
 | Signal | GPIO |
@@ -94,6 +131,7 @@ Copy or junction `libraries/WT32_SC01_PLUS` into your Arduino libraries director
 Validated examples:
 
 - `File -> Examples -> WT32_SC01_PLUS -> 01_DisplayTest`
+- `File -> Examples -> WT32_SC01_PLUS -> 02_TouchTest`
 - `File -> Examples -> WT32_SC01_PLUS -> 05_AudioTest`
 
 For the reference specimen select **ESP32S3 Dev Module**, choose the correct serial port, compile and upload. Example directories also contain `sketch.yaml` metadata with the generic ESP32-S3 FQBN and 115200 monitor baud rate; host-specific COM numbers are intentionally not stored.
