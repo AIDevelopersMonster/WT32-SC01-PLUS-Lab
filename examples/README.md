@@ -13,7 +13,7 @@ Hardware-validation progression for the reference WT32-SC01-PLUS specimen:
 | `05_ble_test` | BLE advertising/GATT | TODO |
 | `06_audio_test` | audio path identification/test | BLOCKED BY HW ID |
 | `07_expansion_io_test` | safe GPIO/connector checks | BLOCKED BY PINOUT |
-| `08_lvgl_demo` | integrated LVGL demo | READY — DISPLAY+TOUCH PREREQUISITES PASS |
+| `08_lvgl_demo` | integrated ST7796 + FT6336U-compatible LVGL touch UI | **READY FOR BUILD / PHYSICAL VALIDATION PENDING** |
 
 Each example has its own README containing prerequisites, expected output, safety notes and hardware/evidence status.
 
