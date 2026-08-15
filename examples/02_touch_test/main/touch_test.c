@@ -1,4 +1,3 @@
-#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,37 +15,42 @@ static const char *TAG = "touch_test";
 #define TOUCH_SCL_GPIO          GPIO_NUM_5
 #define TOUCH_INT_GPIO          GPIO_NUM_7
 #define TOUCH_RST_GPIO          GPIO_NUM_4
+#define TOUCH_I2C_PORT          I2C_NUM_1
+#define TOUCH_I2C_FREQ_HZ       400000
+#define TOUCH_I2C_ADDR          0x38
 
-#define TOUCH_I2C_FREQ_HZ       100000
-#define TOUCH_EXPECTED_ADDR     0x38
 #define TOUCH_POLL_MS           20
 #define TOUCH_TEST_DURATION_MS  30000
 #define TOUCH_RESET_LOW_MS      20
 #define TOUCH_RESET_BOOT_MS     200
 
-#define REG_TOUCH_POINTS        0x02
-#define REG_TOUCH1_XH           0x03
-#define REG_CHIP_ID_HINT        0xA3
-#define REG_FIRMWARE_ID         0xA6
-#define REG_VENDOR_ID_HINT      0xA8
+/* FT6336U-compatible register map used by the external reference project. */
+#define REG_MODE_SWITCH         0x00
+#define REG_TD_STATUS           0x02
+#define REG_P1_XH               0x03
+#define REG_ID_G_CIPHER_LOW     0xA0
+#define REG_ID_G_CIPHER_HIGH    0xA3
+#define REG_ID_G_FIRMID         0xA6
+#define REG_ID_G_FOCALTECH_ID   0xA8
+#define FT6336U_CHIP_CODE        0x02
 
 static esp_err_t read_reg(i2c_master_dev_handle_t dev, uint8_t reg, uint8_t *data, size_t len)
 {
     return i2c_master_transmit_receive(dev, &reg, 1, data, len, 100);
 }
 
-static unsigned print_scan(i2c_master_bus_handle_t bus, const char *label, bool *found_expected)
+static unsigned scan_bus(i2c_master_bus_handle_t bus, const char *label, bool *saw_0x38)
 {
     unsigned found = 0;
 
     printf("\n[I2C SCAN - %s]\n", label);
     for (uint16_t addr = 0x08; addr <= 0x77; ++addr) {
-        esp_err_t err = i2c_master_probe(bus, addr, 20);
+        const esp_err_t err = i2c_master_probe(bus, addr, 20);
         if (err == ESP_OK) {
             printf("  ACK at 0x%02X\n", addr);
             ++found;
-            if (addr == TOUCH_EXPECTED_ADDR) {
-                *found_expected = true;
+            if (addr == TOUCH_I2C_ADDR) {
+                *saw_0x38 = true;
             }
         } else if (err == ESP_ERR_TIMEOUT) {
             printf("  Probe timeout at 0x%02X -- check bus/pull-ups\n", addr);
@@ -54,7 +58,7 @@ static unsigned print_scan(i2c_master_bus_handle_t bus, const char *label, bool 
     }
 
     if (found == 0) {
-        printf("  No responding I2C addresses detected\n");
+        printf("  No responding addresses detected by address-only probe\n");
     }
     return found;
 }
@@ -63,7 +67,7 @@ static esp_err_t pulse_shared_reset(void)
 {
     printf("\n[SHARED RESET RECOVERY]\n");
     printf("  GPIO4 is shared by touch reset and LCD reset.\n");
-    printf("  Display is not initialized, so this diagnostic pulse is intentional.\n");
+    printf("  Display is not initialized in this test.\n");
     printf("  Sequence: HIGH -> LOW %u ms -> HIGH -> wait %u ms\n",
            TOUCH_RESET_LOW_MS, TOUCH_RESET_BOOT_MS);
 
@@ -76,30 +80,49 @@ static esp_err_t pulse_shared_reset(void)
     };
 
     esp_err_t err = gpio_config(&rst_cfg);
-    if (err != ESP_OK) {
-        return err;
-    }
+    if (err != ESP_OK) return err;
 
     err = gpio_set_level(TOUCH_RST_GPIO, 1);
-    if (err != ESP_OK) {
-        return err;
-    }
+    if (err != ESP_OK) return err;
     vTaskDelay(pdMS_TO_TICKS(10));
 
     err = gpio_set_level(TOUCH_RST_GPIO, 0);
-    if (err != ESP_OK) {
-        return err;
-    }
+    if (err != ESP_OK) return err;
     vTaskDelay(pdMS_TO_TICKS(TOUCH_RESET_LOW_MS));
 
     err = gpio_set_level(TOUCH_RST_GPIO, 1);
-    if (err != ESP_OK) {
-        return err;
-    }
+    if (err != ESP_OK) return err;
     vTaskDelay(pdMS_TO_TICKS(TOUCH_RESET_BOOT_MS));
 
-    printf("  Shared reset released HIGH\n");
     return ESP_OK;
+}
+
+static bool read_identity(i2c_master_dev_handle_t dev,
+                          uint8_t *cipher_low,
+                          uint8_t *cipher_high,
+                          uint8_t *firm_id,
+                          uint8_t *focaltech_id)
+{
+    const esp_err_t e0 = read_reg(dev, REG_ID_G_CIPHER_LOW, cipher_low, 1);
+    const esp_err_t e1 = read_reg(dev, REG_ID_G_CIPHER_HIGH, cipher_high, 1);
+    const esp_err_t e2 = read_reg(dev, REG_ID_G_FIRMID, firm_id, 1);
+    const esp_err_t e3 = read_reg(dev, REG_ID_G_FOCALTECH_ID, focaltech_id, 1);
+
+    printf("\n[DIRECT REGISTER READ @ 0x38]\n");
+    printf("  0xA0 CIPHER_LOW / chip code : %s", e0 == ESP_OK ? "0x" : "read failed");
+    if (e0 == ESP_OK) printf("%02X", *cipher_low);
+    printf("\n");
+    printf("  0xA3 CIPHER_HIGH             : %s", e1 == ESP_OK ? "0x" : "read failed");
+    if (e1 == ESP_OK) printf("%02X", *cipher_high);
+    printf("\n");
+    printf("  0xA6 firmware ID             : %s", e2 == ESP_OK ? "0x" : "read failed");
+    if (e2 == ESP_OK) printf("%02X", *firm_id);
+    printf("\n");
+    printf("  0xA8 FocalTech ID            : %s", e3 == ESP_OK ? "0x" : "read failed");
+    if (e3 == ESP_OK) printf("%02X", *focaltech_id);
+    printf("\n");
+
+    return e0 == ESP_OK;
 }
 
 void app_main(void)
@@ -107,15 +130,17 @@ void app_main(void)
     printf("\n");
     printf("================================================================\n");
     printf(" WT32-SC01-PLUS-Lab / 02_touch_test\n");
-    printf(" I2C touch discovery + raw coordinate validation\n");
+    printf(" FT6336U-oriented I2C discovery + raw coordinate validation\n");
     printf("================================================================\n");
     printf(" SDA / SCL / INT / shared RST : 6 / 5 / 7 / 4\n");
+    printf(" I2C controller               : I2C1\n");
     printf(" I2C clock                    : %u Hz\n", TOUCH_I2C_FREQ_HZ);
-    printf(" Initial scan                 : GPIO4 NOT DRIVEN\n");
-    printf(" Recovery if no ACK           : active-low GPIO4 reset pulse\n");
+    printf(" Expected address             : 0x38\n");
+    printf(" Reference chip code          : reg 0xA0 == 0x02 for FT6336U\n");
+    printf(" Initial reset action         : NONE\n");
+    printf(" Recovery reset               : GPIO4 only if direct read fails\n");
     printf(" Display                      : NOT INITIALIZED\n");
     printf(" Controller register writes   : NONE\n");
-    printf(" Expected FT5x06-family addr  : 0x38 (hypothesis to test)\n");
     printf(" Raw observation window       : %u ms\n", TOUCH_TEST_DURATION_MS);
     printf("================================================================\n\n");
 
@@ -129,7 +154,7 @@ void app_main(void)
     ESP_ERROR_CHECK(gpio_config(&int_cfg));
 
     const i2c_master_bus_config_t bus_cfg = {
-        .i2c_port = I2C_NUM_0,
+        .i2c_port = TOUCH_I2C_PORT,
         .sda_io_num = TOUCH_SDA_GPIO,
         .scl_io_num = TOUCH_SCL_GPIO,
         .clk_source = I2C_CLK_SRC_DEFAULT,
@@ -140,7 +165,7 @@ void app_main(void)
     };
 
     i2c_master_bus_handle_t bus = NULL;
-    ESP_LOGI(TAG, "Initializing I2C master bus");
+    ESP_LOGI(TAG, "Initializing I2C1 on SDA6/SCL5 at 400 kHz");
     esp_err_t err = i2c_new_master_bus(&bus_cfg, &bus);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "i2c_new_master_bus failed: %s", esp_err_to_name(err));
@@ -148,55 +173,12 @@ void app_main(void)
         return;
     }
 
-    bool found_expected = false;
-    const unsigned found_before_reset = print_scan(bus, "BEFORE RESET", &found_expected);
-    bool reset_attempted = false;
-    unsigned found_after_reset = 0;
-
-    if (!found_expected) {
-        reset_attempted = true;
-        err = pulse_shared_reset();
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Shared reset pulse failed: %s", esp_err_to_name(err));
-            printf("RESULT: INVESTIGATE - SHARED RESET GPIO FAILED\n");
-            printf("END 02_touch_test\n");
-            i2c_del_master_bus(bus);
-            return;
-        }
-
-        found_after_reset = print_scan(bus, "AFTER GPIO4 RESET", &found_expected);
-    }
-
-    if (!found_expected) {
-        printf("\n[DISCOVERY SUMMARY]\n");
-        printf("  Devices before reset      : %u\n", found_before_reset);
-        printf("  Shared reset attempted    : %s\n", reset_attempted ? "yes" : "no");
-        if (reset_attempted) {
-            printf("  Devices after reset       : %u\n", found_after_reset);
-        }
-        printf("  Address 0x38              : NOT DETECTED\n");
-        printf("  INT level                 : %d\n", gpio_get_level(TOUCH_INT_GPIO));
-        printf("\n[RESULT]\n");
-        printf("RESULT: INVESTIGATE - NO FT5x06-FAMILY ADDRESS AT 0x38 AFTER RESET RECOVERY\n");
-        printf("NOTE: next step is wiring/power/bus verification; exact controller identity remains unresolved.\n");
-        printf("NOTE: no touch-controller registers were written.\n");
-        printf("END 02_touch_test\n");
-        i2c_del_master_bus(bus);
-        return;
-    }
-
-    printf("\n[DISCOVERY SUMMARY]\n");
-    printf("  Devices before reset      : %u\n", found_before_reset);
-    printf("  Shared reset attempted    : %s\n", reset_attempted ? "yes" : "no");
-    if (reset_attempted) {
-        printf("  Devices after reset       : %u\n", found_after_reset);
-    }
-    printf("  Address 0x38              : ACK\n");
-    printf("  INT level                 : %d\n", gpio_get_level(TOUCH_INT_GPIO));
+    bool scan_saw_0x38 = false;
+    const unsigned scan_count_before = scan_bus(bus, "BEFORE RESET", &scan_saw_0x38);
 
     const i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = TOUCH_EXPECTED_ADDR,
+        .device_address = TOUCH_I2C_ADDR,
         .scl_speed_hz = TOUCH_I2C_FREQ_HZ,
         .scl_wait_us = 0,
         .flags.disable_ack_check = false,
@@ -211,34 +193,65 @@ void app_main(void)
         return;
     }
 
-    uint8_t chip_hint = 0;
-    uint8_t fw_id = 0;
-    uint8_t vendor_hint = 0;
-    const esp_err_t chip_err = read_reg(dev, REG_CHIP_ID_HINT, &chip_hint, 1);
-    const esp_err_t fw_err = read_reg(dev, REG_FIRMWARE_ID, &fw_id, 1);
-    const esp_err_t vendor_err = read_reg(dev, REG_VENDOR_ID_HINT, &vendor_hint, 1);
+    uint8_t cipher_low = 0;
+    uint8_t cipher_high = 0;
+    uint8_t firm_id = 0;
+    uint8_t focaltech_id = 0;
 
-    printf("\n[READ-ONLY REGISTER HINTS @ 0x38]\n");
-    printf("  reg 0xA3                 : %s", chip_err == ESP_OK ? "0x" : "read failed");
-    if (chip_err == ESP_OK) {
-        printf("%02X", chip_hint);
+    bool direct_read_ok = read_identity(dev, &cipher_low, &cipher_high, &firm_id, &focaltech_id);
+    bool reset_attempted = false;
+    unsigned scan_count_after = 0;
+
+    if (!direct_read_ok) {
+        reset_attempted = true;
+        err = pulse_shared_reset();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Shared reset pulse failed: %s", esp_err_to_name(err));
+            printf("RESULT: INVESTIGATE - SHARED RESET GPIO FAILED\n");
+            printf("END 02_touch_test\n");
+            i2c_master_bus_rm_device(dev);
+            i2c_del_master_bus(bus);
+            return;
+        }
+
+        bool scan_after_saw_0x38 = false;
+        scan_count_after = scan_bus(bus, "AFTER GPIO4 RESET", &scan_after_saw_0x38);
+        scan_saw_0x38 = scan_saw_0x38 || scan_after_saw_0x38;
+        direct_read_ok = read_identity(dev, &cipher_low, &cipher_high, &firm_id, &focaltech_id);
     }
-    printf("\n");
-    printf("  reg 0xA6                 : %s", fw_err == ESP_OK ? "0x" : "read failed");
-    if (fw_err == ESP_OK) {
-        printf("%02X", fw_id);
+
+    printf("\n[DISCOVERY SUMMARY]\n");
+    printf("  Address-only scan count before reset : %u\n", scan_count_before);
+    printf("  Address-only scan saw 0x38            : %s\n", scan_saw_0x38 ? "yes" : "no");
+    printf("  Shared reset attempted                : %s\n", reset_attempted ? "yes" : "no");
+    if (reset_attempted) {
+        printf("  Address-only scan count after reset  : %u\n", scan_count_after);
     }
-    printf("\n");
-    printf("  reg 0xA8                 : %s", vendor_err == ESP_OK ? "0x" : "read failed");
-    if (vendor_err == ESP_OK) {
-        printf("%02X", vendor_hint);
+    printf("  Direct register read at 0x38          : %s\n", direct_read_ok ? "PASS" : "FAILED");
+    printf("  INT level                             : %d\n", gpio_get_level(TOUCH_INT_GPIO));
+
+    if (!direct_read_ok) {
+        printf("\n[RESULT]\n");
+        printf("RESULT: INVESTIGATE - NO DIRECT FT6336U-COMPATIBLE RESPONSE AT 0x38\n");
+        printf("NOTE: address-only scan is diagnostic only; the decisive test here is direct register access.\n");
+        printf("NOTE: next step is physical SDA/SCL/RST/INT/power verification against the factory image.\n");
+        printf("END 02_touch_test\n");
+        i2c_master_bus_rm_device(dev);
+        i2c_del_master_bus(bus);
+        return;
     }
-    printf("\n");
-    printf("  Interpretation           : hints only; exact controller model is NOT claimed\n");
+
+    printf("\n[IDENTITY INTERPRETATION]\n");
+    if (cipher_low == FT6336U_CHIP_CODE) {
+        printf("  reg 0xA0 == 0x02          : MATCHES FT6336U reference driver\n");
+    } else {
+        printf("  reg 0xA0                  : 0x%02X (does NOT match reference FT6336U code 0x02)\n", cipher_low);
+    }
+    printf("  Claim                     : FT6336U-compatible signature only until independently confirmed\n");
 
     printf("\n[RAW TOUCH OBSERVATION]\n");
     printf("Touch corners, center, and drag across the panel for about 30 seconds.\n");
-    printf("Raw FT5x06-compatible fields are read only; no coordinate transform is applied.\n\n");
+    printf("Registers are read only; no coordinate transform is applied.\n\n");
 
     const TickType_t start = xTaskGetTickCount();
     const TickType_t duration = pdMS_TO_TICKS(TOUCH_TEST_DURATION_MS);
@@ -252,7 +265,7 @@ void app_main(void)
 
     while ((xTaskGetTickCount() - start) < duration) {
         uint8_t points_raw = 0;
-        err = read_reg(dev, REG_TOUCH_POINTS, &points_raw, 1);
+        err = read_reg(dev, REG_TD_STATUS, &points_raw, 1);
         if (err != ESP_OK) {
             ++read_errors;
             vTaskDelay(pdMS_TO_TICKS(TOUCH_POLL_MS));
@@ -265,9 +278,9 @@ void app_main(void)
             last_points = points;
         }
 
-        if (points > 0 && points <= 5) {
+        if (points > 0 && points <= 2) {
             uint8_t raw[6] = {0};
-            err = read_reg(dev, REG_TOUCH1_XH, raw, sizeof(raw));
+            err = read_reg(dev, REG_P1_XH, raw, sizeof(raw));
             if (err == ESP_OK) {
                 const uint8_t event = (raw[0] >> 6) & 0x03;
                 const uint16_t x = ((uint16_t)(raw[0] & 0x0F) << 8) | raw[1];
@@ -291,7 +304,8 @@ void app_main(void)
     }
 
     printf("\n[SUMMARY]\n");
-    printf("  I2C address 0x38         : ACK\n");
+    printf("  Direct register path     : PASS\n");
+    printf("  FT6336U reference code   : %s\n", cipher_low == FT6336U_CHIP_CODE ? "MATCH" : "NO MATCH");
     printf("  Samples with touch      : %u\n", samples_with_touch);
     printf("  I2C read errors          : %u\n", read_errors);
     if (samples_with_touch > 0) {
@@ -306,13 +320,12 @@ void app_main(void)
         printf("  I2C touch read path      : PASS CANDIDATE\n");
         printf("RESULT: TOUCH RAW READ PATH PASS CANDIDATE\n");
     } else if (samples_with_touch > 0) {
-        printf("  I2C touch read path      : PASS CANDIDATE WITH READ ERRORS\n");
-        printf("RESULT: INVESTIGATE - TOUCH DATA SEEN WITH I2C ERRORS\n");
+        printf("RESULT: INVESTIGATE - TOUCH DATA SEEN WITH I2C READ ERRORS\n");
     } else {
-        printf("  I2C touch read path      : NO TOUCH SAMPLES OBSERVED\n");
-        printf("RESULT: INVESTIGATE - ADDRESS RESPONDS BUT NO TOUCH DATA OBSERVED\n");
+        printf("RESULT: INVESTIGATE - CONTROLLER RESPONDS BUT NO TOUCH SAMPLES OBSERVED\n");
     }
-    printf("Exact touch-controller model and 480x320 orientation remain outside this test's claim.\n");
+
+    printf("Exact physical controller marking and 480x320 coordinate orientation remain outside this test's claim.\n");
     printf("END 02_touch_test\n");
 
     i2c_master_bus_rm_device(dev);
