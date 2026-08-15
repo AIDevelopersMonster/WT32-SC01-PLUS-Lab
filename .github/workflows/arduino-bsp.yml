@@ -10,7 +10,7 @@ on:
       - '.github/workflows/arduino-bsp.yml'
 
 jobs:
-  display-example:
+  examples:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,3 +26,21 @@ jobs:
             --fqbn esp32:esp32:esp32s3 \
             --library libraries/WT32_SC01_PLUS \
             libraries/WT32_SC01_PLUS/examples/01_DisplayTest
+      - name: Compile 02_TouchTest
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/02_TouchTest
+      - name: Compile 03_StorageTest
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/03_StorageTest
+      - name: Compile 05_AudioTest
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/05_AudioTest
