@@ -23,7 +23,7 @@ This is intentionally **not** a copy of the factory firmware. Factory reverse en
 | Backlight | **PHYSICAL PASS** | PWM brightness test accepted |
 | Touch | PENDING | Next validation increment |
 | SD | PENDING | Next validation increment |
-| Audio | PENDING | Experimental I2S test follows display merge |
+| Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; high-power test completed without controller reset |
 | RS485 | PENDING | Not yet promoted into BSP |
 | Combined SelfTest | PENDING | Built only from individually validated drivers |
 
@@ -60,27 +60,34 @@ This promotes the display/backlight slice from experimental bring-up to **valida
 
 Display parameters: **480 x 320**, RGB565, 8-bit I80, **10 MHz** write clock.
 
+## Validated audio mapping
+
+| Signal | GPIO |
+|---|---:|
+| LRCK / WS | 35 |
+| BCLK | 36 |
+| DOUT | 37 |
+
+The Arduino `05_AudioTest` was physically accepted on the Panlee V15 / 230208 specimen. The test exercised a loudness staircase through 100% PCM amplitude, a sustained 15-second 90% tone, and repeated 100% bursts. Audible output increased as expected and the ESP32-S3 did not reboot or show an observed brownout/watchdog failure during the run.
+
+The test deliberately isolates audio from LCD, touch, Wi-Fi, LVGL, SD and RS485. This makes the result evidence for the onboard I2S/audio path rather than for a combined-system workload.
+
+### Serial diagnostic caveat
+
+The physical high-power audio run did not produce visible `Serial` output on the monitored COM port. The connected port was later identified as the ESP32-S3 native USB interface (`VID_303A`, `PID_1001`). Therefore simultaneous `Serial` diagnostics over native USB are **not yet certified by the audio PASS**; USB CDC routing/settings remain a separate interface-validation task. This does not invalidate the observed audio output or no-reset result.
+
 ## Arduino IDE
 
-Copy or junction `libraries/WT32_SC01_PLUS` into your Arduino libraries directory, restart Arduino IDE, and open:
+Copy or junction `libraries/WT32_SC01_PLUS` into your Arduino libraries directory and restart Arduino IDE if necessary.
 
-`File -> Examples -> WT32_SC01_PLUS -> 01_DisplayTest`
+Validated examples:
 
-For the validated specimen select **ESP32S3 Dev Module**, choose the correct serial port, compile, upload, and open Serial Monitor at 115200 baud.
+- `File -> Examples -> WT32_SC01_PLUS -> 01_DisplayTest`
+- `File -> Examples -> WT32_SC01_PLUS -> 05_AudioTest`
+
+For the reference specimen select **ESP32S3 Dev Module**, choose the correct serial port, compile and upload. Example directories also contain `sketch.yaml` metadata with the generic ESP32-S3 FQBN and 115200 monitor baud rate; host-specific COM numbers are intentionally not stored.
 
 Selecting the generic `ESP32 Dev Module` is incorrect for this board and causes `esptool` to reject the ESP32-S3 during upload.
-
-## Display PASS criteria
-
-A physical PASS requires all of the following:
-
-1. black, white, red, green and blue screens are correct;
-2. the combined pattern shows clean color bars and a smooth grayscale;
-3. geometry is stable with no persistent missing region or gross flicker;
-4. backlight visibly changes through 100% -> 10% -> 50% -> 100%;
-5. serial output reports successful initialization.
-
-A compile PASS alone is not a hardware PASS.
 
 ## Hardware profile warning
 
