@@ -89,21 +89,19 @@ bool WT32_SC01_PLUS_Display::begin() {
     lineBuffer_ = static_cast<uint16_t *>(heap_caps_malloc(kLineBytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
     if (!lineBuffer_) return false;
 
-    // Minimal ST7796 bring-up. This deliberately avoids copying the factory firmware.
-    if (!command(0x01)) return false; // software reset
+    if (!command(0x01)) return false;
     delay(150);
-    if (!command(0x11)) return false; // sleep out
+    if (!command(0x11)) return false;
     delay(120);
 
-    const uint8_t pixelFormat = 0x55; // RGB565
+    const uint8_t pixelFormat = 0x55;
     if (!command(0x3A, &pixelFormat, 1)) return false;
 
-    // BGR + MV (landscape), matching the independently validated ESP-IDF test.
     const uint8_t madctl = 0x28;
     if (!command(0x36, &madctl, 1)) return false;
 
-    if (!command(0x21)) return false; // display inversion on
-    if (!command(0x29)) return false; // display on
+    if (!command(0x21)) return false;
+    if (!command(0x29)) return false;
     delay(50);
 
     ready_ = true;
@@ -121,8 +119,28 @@ void WT32_SC01_PLUS_Display::fillScreen(uint16_t color) {
         if (!pushPixels(lineBuffer_, kLinePixels)) return;
     }
 
-    // Parameter transactions wait for queued color DMA, making lineBuffer_ reusable.
-    command(0x00); // NOP / synchronization point
+    command(0x00);
+}
+
+void WT32_SC01_PLUS_Display::fillRect(int x, int y, int w, int h, uint16_t color) {
+    if (!ready_ || !lineBuffer_ || w <= 0 || h <= 0) return;
+
+    int x0 = x < 0 ? 0 : x;
+    int y0 = y < 0 ? 0 : y;
+    int x1 = x + w - 1;
+    int y1 = y + h - 1;
+    if (x1 >= width()) x1 = width() - 1;
+    if (y1 >= height()) y1 = height() - 1;
+    if (x0 > x1 || y0 > y1) return;
+
+    const size_t count = static_cast<size_t>(x1 - x0 + 1);
+    for (size_t i = 0; i < count; ++i) lineBuffer_[i] = color;
+
+    for (int yy = y0; yy <= y1; ++yy) {
+        if (!setWindow(x0, yy, x1, yy)) return;
+        if (!pushPixels(lineBuffer_, count)) return;
+    }
+    command(0x00);
 }
 
 void WT32_SC01_PLUS_Display::drawTestPattern() {
