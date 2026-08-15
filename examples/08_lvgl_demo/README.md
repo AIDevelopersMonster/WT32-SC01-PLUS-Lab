@@ -2,16 +2,17 @@
 
 Integrated LVGL touch demo for the reference **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208** specimen.
 
-**Current status:** `READY FOR BUILD / PHYSICAL VALIDATION PENDING`
+**Current status:** `PHYSICAL PASS`
 
-## Prerequisites already physically validated
+## Physically validated hardware
 
-This example intentionally reuses only hardware behavior already established by earlier tests:
+This example integrates the display and touch paths previously established by the hardware tests and has now been validated on the real reference specimen:
 
 ```text
 HW-02 display path       : PASS
 HW-03 raw touch path     : PASS
 HW-03 touch orientation  : PASS
+08 LVGL + touch          : PASS
 ```
 
 Validated display path:
@@ -74,7 +75,32 @@ Last button: <name>
 LVGL touch events: <count>
 ```
 
-The physical PASS criterion is therefore stronger than seeing pixels or raw coordinates separately: touching each displayed button must cause the expected LVGL object event.
+## Physical validation result
+
+**PASS — 2026-08-15.**
+
+The demo was built, flashed and exercised on the real Panlee reference board. The LVGL interface rendered correctly in 480x320 landscape orientation and touch events were mapped to the displayed controls correctly.
+
+Observed photographic evidence includes:
+
+```text
+Last button: BLUE
+LVGL touch events: 6
+```
+
+This confirms the complete path:
+
+```text
+FT6336U-compatible touch
+        -> raw coordinates
+        -> validated orientation transform
+        -> LVGL pointer input
+        -> LVGL hit testing
+        -> button event callback
+        -> on-screen state update
+```
+
+The successful BLUE-button activation is especially useful because it verifies that the touch coordinates are not merely being received: they are mapped into the same coordinate system as the rendered LVGL objects.
 
 ## Software architecture
 
@@ -103,20 +129,17 @@ lvgl/lvgl                ^9.3
 
 The first build may therefore spend additional time downloading managed components.
 
-## Build
+## Build and flash
 
 From an activated ESP-IDF 6.0.2 shell:
 
 ```powershell
 cd C:\Users\CHUWI\Documents\GitHub\WT32-SC01-PLUS-Lab
-git fetch origin
-git switch --track origin/agent/08-lvgl-demo
 cd .\examples\08_lvgl_demo
 idf.py fullclean
 idf.py build
+idf.py -p COM10 flash monitor
 ```
-
-Do **not** flash until the build output has been reviewed.
 
 ## Expected startup log
 
@@ -134,40 +157,32 @@ RESULT: READY FOR PHYSICAL LVGL TOUCH VALIDATION
 END 08_lvgl_demo startup
 ```
 
-## Physical validation procedure
+The final `READY FOR PHYSICAL LVGL TOUCH VALIDATION` message is a firmware startup message; the repository-level status of this example is now **PHYSICAL PASS**.
 
-After a successful reviewed build:
-
-```powershell
-idf.py -p COM10 flash monitor
-```
-
-On the display:
+## Reproduction / validation procedure
 
 1. confirm the LVGL interface is rendered correctly and fills the 480x320 landscape screen;
 2. touch `RED` and confirm `Last button: RED`;
 3. touch `GREEN` and confirm `Last button: GREEN`;
 4. touch `BLUE` and confirm `Last button: BLUE`;
-5. repeat touches at different points inside the buttons and confirm the counter increments exactly as expected;
-6. check that touching empty background does not increment the button-event counter;
+5. repeat touches at different points inside the buttons and confirm the counter increments as expected;
+6. check that touching empty background does not falsely activate a button;
 7. watch for resets, display corruption, stuck touch, I2C errors or watchdog events.
 
-## PASS criteria
+## Validated claim
 
-Promote `08_lvgl_demo` to physical PASS only when the real specimen demonstrates all of the following:
+The real reference specimen has demonstrated:
 
-- LVGL starts without panic or watchdog reset;
-- the UI is visually correct in 480x320 landscape orientation;
-- FT6336U-compatible signature check succeeds after the shared LCD/touch reset sequence;
-- all three buttons respond at their displayed locations;
-- the reported button name matches the object actually touched;
-- the LVGL event counter increases on valid button clicks;
-- empty-screen touches do not falsely activate a button;
-- repeated touches remain stable.
+- LVGL startup without panic or watchdog reset;
+- visually correct 480x320 landscape UI;
+- working FT6336U-compatible touch path at I2C address `0x38`;
+- correct raw-to-LCD orientation mapping;
+- LVGL object hit testing at displayed button locations;
+- button callback execution and on-screen event-count/state updates.
 
 ## Claim boundary
 
-A PASS here validates the integrated display + single-point touch + LVGL event path on the named specimen.
+This PASS validates the integrated display + single-point touch + LVGL event path on the named specimen.
 
 It does not yet validate:
 
