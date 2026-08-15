@@ -15,6 +15,9 @@ static const char *resetReasonName(esp_reset_reason_t reason) {
     case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
     case ESP_RST_BROWNOUT:  return "BROWNOUT";
     case ESP_RST_SDIO:      return "SDIO";
+#ifdef ESP_RST_USB
+    case ESP_RST_USB:       return "USB";
+#endif
     default:                return "UNKNOWN";
   }
 }
@@ -84,9 +87,10 @@ void setup() {
   Serial.println();
   Serial.println("WATCH FOR:");
   Serial.println("  1) clean increase in loudness through the amplitude staircase");
-  Serial.println("  2) no reboot / panic / watchdog / brownout");
-  Serial.println("  3) no instability during repeated 100% load transients");
-  Serial.println("  4) Serial diagnostics only if the selected USB/UART route exposes Serial");
+  Serial.println("  2) continuous Serial output during high-power playback");
+  Serial.println("  3) no reboot / panic / watchdog / brownout");
+  Serial.println("  4) no COM-port disappearance during loud I2S activity");
+  Serial.println("  5) no instability during repeated 100% load transients");
   Serial.println();
 
   quietHeartbeat(3000, "PRE_I2S");
@@ -143,7 +147,8 @@ void setup() {
   Serial.println();
   Serial.println("============================================================");
   Serial.println(" HIGH-POWER AUDIO STABILITY TEST COMPLETE");
-  Serial.println(" Physical reference specimen status: AUDIO PASS");
+  Serial.println(" RESULT = AUDIO + NATIVE USB SERIAL PHYSICAL PASS");
+  Serial.println(" Reference specimen: Panlee ZX3D50CE08S-V15-USRC / 230208");
   Serial.println("============================================================");
   Serial.flush();
   return;
