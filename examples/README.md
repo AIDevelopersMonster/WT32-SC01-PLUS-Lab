@@ -7,6 +7,7 @@ Hardware-validation progression for the reference WT32-SC01-PLUS specimen:
 | `00_identity_probe` | MCU, flash, PSRAM, reset reason, heap | **PASS — physical specimen** |
 | `01_display_test` | ST7796/I80 initialization and visual patterns | **PASS — physical specimen** |
 | `02_touch_test` | FT6336U-compatible discovery and raw touch coordinates | **PASS — raw touch path; orientation pending** |
+| `02_touch_orientation_test` | display-assisted five-point raw-to-landscape transform | **READY FOR BUILD / PHYSICAL VALIDATION PENDING** |
 | `03_storage_test` | read-only SDSPI/card/sector probe | **PASS — physical specimen; media anomaly observed** |
 | `04_wifi_test` | Wi-Fi scan/connectivity | TODO |
 | `05_ble_test` | BLE advertising/GATT | TODO |
