@@ -7,7 +7,7 @@ Hardware-validation progression for the reference WT32-SC01-PLUS specimen:
 | `00_identity_probe` | MCU, flash, PSRAM, reset reason, heap | **PASS — physical specimen** |
 | `01_display_test` | ST7796/I80 initialization and visual patterns | **PASS — physical specimen** |
 | `02_touch_test` | raw touch and calibration | BLOCKED BY HW ID |
-| `03_storage_test` | safe read-only storage probe | BLOCKED BY HW ID |
+| `03_storage_test` | read-only SDSPI/card/sector probe | **PASS — physical specimen; media anomaly observed** |
 | `04_wifi_test` | Wi-Fi scan/connectivity | TODO |
 | `05_ble_test` | BLE advertising/GATT | TODO |
 | `06_audio_test` | audio path identification/test | BLOCKED BY HW ID |
