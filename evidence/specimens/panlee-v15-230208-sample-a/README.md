@@ -13,7 +13,7 @@ Reference markings:
 | HW-00 | IN PROGRESS | identity/photos being collected |
 | HW-01 | **PASS** | [`hw01-chip/factory-flash-analysis.md`](hw01-chip/factory-flash-analysis.md), [`00_identity_probe/README.md`](00_identity_probe/README.md) |
 | HW-02 | **PASS** | [`01_display_test/README.md`](01_display_test/README.md) |
-| HW-03 | **PASS — raw touch path; orientation pending** | [`02_touch_test/README.md`](02_touch_test/README.md) |
+| HW-03 | **PASS — raw touch + simple orientation transform** | [`02_touch_test/README.md`](02_touch_test/README.md), [`02_touch_orientation_test/README.md`](02_touch_orientation_test/README.md) |
 | HW-04 | **PASS — read path; media anomaly observed** | [`03_storage_test/README.md`](03_storage_test/README.md) |
 
 ## HW-01 verified facts
@@ -59,7 +59,7 @@ Validated for this specimen at the test settings:
 
 TE GPIO48 was not exercised and remains outside the HW-02 PASS claim.
 
-## HW-03 verified raw touch facts
+## HW-03 verified touch facts
 
 `02_touch_test` independently validated the capacitive-touch read path on the physical specimen under ESP-IDF 6.0.2.
 
@@ -83,7 +83,7 @@ Observed identity-related registers:
 0xA8 = 0x11
 ```
 
-`0xA0 == 0x02` matches the investigated FT6336U reference driver's chip code, so the current controlled claim is **FT6336U-compatible signature**. Exact package marking has not been visually confirmed.
+`0xA0 == 0x02` matches the investigated FT6336U reference driver's chip code, so the controlled claim is **FT6336U-compatible signature**. Exact package marking has not been visually confirmed.
 
 Physical raw-touch run:
 
@@ -94,7 +94,33 @@ Observed raw X range : 35 .. 319
 Observed raw Y range : 51 .. 433
 ```
 
-These values are consistent with an approximately 320x480 native touch coordinate space. The final transform to the independently validated 480x320 landscape LCD coordinate system remains pending a five-point orientation test.
+A separate five-point display-assisted orientation run then captured:
+
+```text
+TOP-LEFT     lcd=( 40, 40) raw=(282, 58)
+TOP-RIGHT    lcd=(439, 40) raw=(272,426)
+CENTER       lcd=(240,160) raw=(170,238)
+BOTTOM-LEFT  lcd=( 40,279) raw=( 35, 37)
+BOTTOM-RIGHT lcd=(439,279) raw=( 40,439)
+```
+
+Best simple orientation candidate:
+
+```text
+swap_xy  = true
+mirror_x = false
+mirror_y = true
+RMS      = 11.92 px
+```
+
+Equivalent baseline mapping:
+
+```text
+LCD_X = raw_Y
+LCD_Y = 319 - raw_X
+```
+
+The second-best candidate had RMS `214.31 px`, providing strong separation. This certifies the simple raw-to-480x320 landscape orientation for this specimen. Precision calibration remains outside the claim.
 
 ## HW-04 verified storage facts
 
