@@ -1,14 +1,17 @@
 # 02_touch_test
 
-Read-only touch discovery and raw-coordinate validation firmware for the reference **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208** specimen.
+Independent touch-controller discovery and raw-coordinate validation firmware for the reference **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208** specimen.
 
-**Current status:** `READY FOR BUILD / PHYSICAL VALIDATION PENDING`
+**Current status:** `PASS — RAW TOUCH PATH PHYSICALLY VALIDATED`  
+**Orientation/calibration:** `PENDING`
 
-## Evidence basis
+Physical validation protocol:
 
-Factory-firmware reverse engineering already established that the physical specimen has a working touch path and that the factory test tracks coordinates across 44 target regions. The factory image also contains FT5x06-family driver strings, but that does **not** by itself prove the exact controller model.
+- [`../../evidence/specimens/panlee-v15-230208-sample-a/02_touch_test/README.md`](../../evidence/specimens/panlee-v15-230208-sample-a/02_touch_test/README.md)
 
-Known board-family touch wiring used by this first independent test:
+## Validated hardware path
+
+The physical specimen was tested under ESP-IDF 6.0.2 using:
 
 | Signal | GPIO |
 |---|---:|
@@ -17,30 +20,143 @@ Known board-family touch wiring used by this first independent test:
 | TP INT | 7 |
 | TP RST | 4 |
 
-GPIO4 is shared with LCD reset. This first touch test therefore deliberately does **not** drive the reset line and does not initialize the LCD.
+Runtime configuration:
 
-## Test philosophy
+```text
+I2C controller : I2C1
+I2C frequency  : 400 kHz
+I2C address    : 0x38
+```
 
-The first independent touch test is intentionally conservative:
+GPIO4 is shared by LCD reset and touch reset.
 
-1. initialize I2C at 100 kHz on GPIO6/GPIO5;
-2. scan the legal 7-bit I2C address range;
-3. record whether address `0x38` responds;
-4. only when `0x38` ACKs, read a few FT5x06-compatible register locations as non-authoritative hints;
-5. poll the FT5x06-compatible touch-count and first-point fields for 30 seconds;
-6. print raw coordinates, event bits, track ID and INT state;
-7. report observed raw X/Y ranges;
-8. perform no controller-register writes, calibration writes, NVS writes, filesystem writes, Wi-Fi or BLE operations.
+## Startup behavior discovered
 
-Espressif's FT5x06 component uses I2C address `0x38`, 100 kHz, touch-count register `0x02`, first point beginning at `0x03`, and identification/firmware-related fields around `0xA3`, `0xA6` and `0xA8`. This project reads those locations directly but does not instantiate the FT5x06 component because its normal initialization writes controller tuning registers. The goal here is observation before configuration.
+The touch controller did not respond immediately after application startup. Neither the address scan nor direct register reads at `0x38` succeeded before reset release.
 
-## Claim discipline
+The test then applied an explicit active-low shared-reset sequence on GPIO4:
 
-A successful `0x38` response plus plausible coordinate traffic supports an **FT5x06-compatible read-path** interpretation for this specimen.
+```text
+HIGH -> LOW 20 ms -> HIGH -> wait 200 ms
+```
 
-It does **not** by itself establish the exact touch-controller part number. Exact model identity remains unresolved until supported by stronger physical or register-level evidence.
+After that sequence:
 
-This test also does not yet claim the final 480x320 coordinate transform. Raw coordinate ranges are collected first; orientation, swap/mirror rules and calibration are derived only after the physical run.
+```text
+[I2C SCAN - AFTER GPIO4 RESET]
+  ACK at 0x38
+```
+
+and direct register reads succeeded.
+
+This establishes an important initialization requirement for this specimen: the independent touch path must release/reset the controller through GPIO4 before reliable I2C communication.
+
+## FT6336U-compatible signature
+
+Read-only register values observed on the physical specimen:
+
+```text
+0xA0 CIPHER_LOW / chip code : 0x02
+0xA3 CIPHER_HIGH             : 0x64
+0xA6 firmware ID             : 0x03
+0xA8 FocalTech ID            : 0x11
+```
+
+The investigated external FT6336U reference driver uses `0xA0 == 0x02` as its FT6336U chip code. The specimen therefore has a **physically validated FT6336U-compatible register signature**.
+
+The exact physical package marking has not yet been read, so this repository deliberately avoids upgrading that statement to an unconditional package-identification claim.
+
+## Raw touch validation
+
+During the 30-second physical run:
+
+```text
+Direct register path     : PASS
+FT6336U reference code   : MATCH
+Samples with touch       : 37
+I2C read errors          : 0
+Observed raw X range     : 35 .. 319
+Observed raw Y range     : 51 .. 433
+```
+
+Example raw samples:
+
+```text
+x=104 y=247
+x=175 y=202
+x=265 y=51
+x=319 y=424
+x=35  y=433
+x=61  y=140
+```
+
+The application reached:
+
+```text
+RESULT: TOUCH RAW READ PATH PASS CANDIDATE
+END 02_touch_test
+```
+
+and returned normally from `app_main()`.
+
+Accordingly the lab-level hardware status is promoted to:
+
+```text
+HW-03 raw touch path = PASS
+```
+
+## What the PASS establishes
+
+For this physical specimen, the test directly validates:
+
+- TP SDA on GPIO6;
+- TP SCL on GPIO5;
+- responsive touch-related INT input on GPIO7;
+- shared reset GPIO4 as an active-low touch reset/release path;
+- I2C communication at 400 kHz;
+- responding touch address `0x38`;
+- FT6336U-compatible identity signature (`0xA0 == 0x02`);
+- raw touch count and X/Y reads;
+- repeated touch/release operation;
+- zero I2C read errors during the measured run.
+
+## Coordinate-system observation
+
+The physical raw samples are consistent with an approximately 320x480 native touch coordinate space:
+
+```text
+raw X ~ 0..319
+raw Y ~ 0..479
+```
+
+The LCD is independently validated in 480x320 landscape mode. Therefore a swap/mirror transform is expected, but its exact form is **not yet claimed**.
+
+## Claim boundary
+
+This PASS does **not** yet establish:
+
+- the exact `raw 320x480 -> LCD 480x320` transform;
+- swap/mirror flags;
+- edge scale/offset calibration;
+- multi-touch correctness;
+- interrupt edge polarity or ISR timing;
+- gesture support;
+- exact physical IC package marking;
+- all WT32-SC01-PLUS/OEM revisions.
+
+## Next stage
+
+The next test is a display-assisted five-point orientation validation. It will show targets at known LCD coordinates:
+
+```text
+TOP-LEFT
+TOP-RIGHT
+CENTER
+BOTTOM-LEFT
+BOTTOM-RIGHT
+```
+
+For each target, the firmware will capture a stable raw touch sample. The resulting five correspondences will be used to determine the unique swap/mirror mapping and check whether simple axis scaling is sufficient.
 
 ## Build
 
@@ -48,57 +164,13 @@ From an activated ESP-IDF 6.0.2 shell:
 
 ```powershell
 cd C:\Users\CHUWI\Documents\GitHub\WT32-SC01-PLUS-Lab
-git fetch origin
-git switch --track origin/agent/02-touch-test
+git switch agent/02-touch-test
 cd .\examples\02_touch_test
-idf.py fullclean
 idf.py build
 ```
 
-Do not flash until the build completes successfully and its warnings/errors have been reviewed.
-
-## Physical run procedure
-
-After a successful build:
+Flash/monitor:
 
 ```powershell
 idf.py -p COM10 flash monitor
 ```
-
-During the 30-second observation window:
-
-- touch near all four corners;
-- touch near the center;
-- drag horizontally and vertically;
-- optionally draw a diagonal across most of the panel.
-
-The serial log should show raw `x`, `y`, `event`, `track` and `INT` values.
-
-## PASS candidate criteria
-
-The first-stage raw touch path can be promoted toward PASS when the real specimen demonstrates:
-
-- I2C bus initialization succeeds;
-- a stable responding touch address is observed;
-- for the FT5x06-compatible path, `0x38` ACKs;
-- touching the panel produces changing raw coordinate samples;
-- broad panel touches produce a correspondingly broad raw coordinate range;
-- no recurring I2C timeout/error storm occurs;
-- the program reaches `END 02_touch_test` normally.
-
-If another address responds instead of `0x38`, stop at discovery evidence and investigate the actual controller before reading model-specific registers.
-
-## Safety boundary
-
-The firmware intentionally:
-
-- does not drive shared reset GPIO4;
-- does not initialize the LCD;
-- does not write touch-controller registers;
-- does not store calibration;
-- does not use NVS or a filesystem;
-- does not initialize SD, audio, RS-485, Wi-Fi or BLE.
-
-## Next stage after physical run
-
-Use the measured raw ranges and corner ordering to determine the specimen's actual transform to the 480x320 landscape coordinate system. Only then add an optional display-overlay / target-grid validation stage.
