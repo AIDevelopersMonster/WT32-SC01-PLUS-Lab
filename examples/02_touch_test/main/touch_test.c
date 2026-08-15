@@ -21,6 +21,8 @@ static const char *TAG = "touch_test";
 #define TOUCH_EXPECTED_ADDR     0x38
 #define TOUCH_POLL_MS           20
 #define TOUCH_TEST_DURATION_MS  30000
+#define TOUCH_RESET_LOW_MS      20
+#define TOUCH_RESET_BOOT_MS     200
 
 #define REG_TOUCH_POINTS        0x02
 #define REG_TOUCH1_XH           0x03
@@ -33,11 +35,11 @@ static esp_err_t read_reg(i2c_master_dev_handle_t dev, uint8_t reg, uint8_t *dat
     return i2c_master_transmit_receive(dev, &reg, 1, data, len, 100);
 }
 
-static void print_scan(i2c_master_bus_handle_t bus, bool *found_expected)
+static unsigned print_scan(i2c_master_bus_handle_t bus, const char *label, bool *found_expected)
 {
     unsigned found = 0;
 
-    printf("\n[I2C SCAN]\n");
+    printf("\n[I2C SCAN - %s]\n", label);
     for (uint16_t addr = 0x08; addr <= 0x77; ++addr) {
         esp_err_t err = i2c_master_probe(bus, addr, 20);
         if (err == ESP_OK) {
@@ -54,6 +56,50 @@ static void print_scan(i2c_master_bus_handle_t bus, bool *found_expected)
     if (found == 0) {
         printf("  No responding I2C addresses detected\n");
     }
+    return found;
+}
+
+static esp_err_t pulse_shared_reset(void)
+{
+    printf("\n[SHARED RESET RECOVERY]\n");
+    printf("  GPIO4 is shared by touch reset and LCD reset.\n");
+    printf("  Display is not initialized, so this diagnostic pulse is intentional.\n");
+    printf("  Sequence: HIGH -> LOW %u ms -> HIGH -> wait %u ms\n",
+           TOUCH_RESET_LOW_MS, TOUCH_RESET_BOOT_MS);
+
+    const gpio_config_t rst_cfg = {
+        .pin_bit_mask = 1ULL << TOUCH_RST_GPIO,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+
+    esp_err_t err = gpio_config(&rst_cfg);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    err = gpio_set_level(TOUCH_RST_GPIO, 1);
+    if (err != ESP_OK) {
+        return err;
+    }
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    err = gpio_set_level(TOUCH_RST_GPIO, 0);
+    if (err != ESP_OK) {
+        return err;
+    }
+    vTaskDelay(pdMS_TO_TICKS(TOUCH_RESET_LOW_MS));
+
+    err = gpio_set_level(TOUCH_RST_GPIO, 1);
+    if (err != ESP_OK) {
+        return err;
+    }
+    vTaskDelay(pdMS_TO_TICKS(TOUCH_RESET_BOOT_MS));
+
+    printf("  Shared reset released HIGH\n");
+    return ESP_OK;
 }
 
 void app_main(void)
@@ -61,13 +107,14 @@ void app_main(void)
     printf("\n");
     printf("================================================================\n");
     printf(" WT32-SC01-PLUS-Lab / 02_touch_test\n");
-    printf(" READ-ONLY I2C touch discovery + raw coordinate validation\n");
+    printf(" I2C touch discovery + raw coordinate validation\n");
     printf("================================================================\n");
     printf(" SDA / SCL / INT / shared RST : 6 / 5 / 7 / 4\n");
     printf(" I2C clock                    : %u Hz\n", TOUCH_I2C_FREQ_HZ);
-    printf(" GPIO4 reset action           : NOT DRIVEN\n");
+    printf(" Initial scan                 : GPIO4 NOT DRIVEN\n");
+    printf(" Recovery if no ACK           : active-low GPIO4 reset pulse\n");
     printf(" Display                      : NOT INITIALIZED\n");
-    printf(" Controller writes            : NONE\n");
+    printf(" Controller register writes   : NONE\n");
     printf(" Expected FT5x06-family addr  : 0x38 (hypothesis to test)\n");
     printf(" Raw observation window       : %u ms\n", TOUCH_TEST_DURATION_MS);
     printf("================================================================\n\n");
@@ -102,18 +149,50 @@ void app_main(void)
     }
 
     bool found_expected = false;
-    print_scan(bus, &found_expected);
+    const unsigned found_before_reset = print_scan(bus, "BEFORE RESET", &found_expected);
+    bool reset_attempted = false;
+    unsigned found_after_reset = 0;
 
     if (!found_expected) {
-        printf("\n[RESULT]\n");
-        printf("  I2C bus scan              : completed\n");
+        reset_attempted = true;
+        err = pulse_shared_reset();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Shared reset pulse failed: %s", esp_err_to_name(err));
+            printf("RESULT: INVESTIGATE - SHARED RESET GPIO FAILED\n");
+            printf("END 02_touch_test\n");
+            i2c_del_master_bus(bus);
+            return;
+        }
+
+        found_after_reset = print_scan(bus, "AFTER GPIO4 RESET", &found_expected);
+    }
+
+    if (!found_expected) {
+        printf("\n[DISCOVERY SUMMARY]\n");
+        printf("  Devices before reset      : %u\n", found_before_reset);
+        printf("  Shared reset attempted    : %s\n", reset_attempted ? "yes" : "no");
+        if (reset_attempted) {
+            printf("  Devices after reset       : %u\n", found_after_reset);
+        }
         printf("  Address 0x38              : NOT DETECTED\n");
-        printf("RESULT: INVESTIGATE - NO FT5x06-FAMILY ADDRESS AT 0x38\n");
-        printf("NOTE: exact controller identity remains unresolved; no controller registers were written.\n");
+        printf("  INT level                 : %d\n", gpio_get_level(TOUCH_INT_GPIO));
+        printf("\n[RESULT]\n");
+        printf("RESULT: INVESTIGATE - NO FT5x06-FAMILY ADDRESS AT 0x38 AFTER RESET RECOVERY\n");
+        printf("NOTE: next step is wiring/power/bus verification; exact controller identity remains unresolved.\n");
+        printf("NOTE: no touch-controller registers were written.\n");
         printf("END 02_touch_test\n");
         i2c_del_master_bus(bus);
         return;
     }
+
+    printf("\n[DISCOVERY SUMMARY]\n");
+    printf("  Devices before reset      : %u\n", found_before_reset);
+    printf("  Shared reset attempted    : %s\n", reset_attempted ? "yes" : "no");
+    if (reset_attempted) {
+        printf("  Devices after reset       : %u\n", found_after_reset);
+    }
+    printf("  Address 0x38              : ACK\n");
+    printf("  INT level                 : %d\n", gpio_get_level(TOUCH_INT_GPIO));
 
     const i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
