@@ -162,8 +162,9 @@ void setup() {
   Serial.println();
   Serial.println("============================================================");
   if (allPass) {
-    Serial.println(" TOUCH FIVE-POINT TEST PASS CANDIDATE");
+    Serial.println(" TOUCH FIVE-POINT TEST PASS");
     Serial.println(" Arduino I2C + identity + coherent P1/P2 read + landscape transform passed.");
+    Serial.println(" Reference specimen: Panlee V15 / 230208 PHYSICAL PASS.");
   } else {
     Serial.println(" TOUCH TEST FAILED / INVESTIGATE");
   }
