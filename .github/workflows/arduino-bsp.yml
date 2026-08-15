@@ -1,0 +1,28 @@
+name: Arduino BSP CI
+
+on:
+  push:
+    branches:
+      - agent/arduino-bsp-v0.1-display
+  pull_request:
+    paths:
+      - 'libraries/WT32_SC01_PLUS/**'
+      - '.github/workflows/arduino-bsp.yml'
+
+jobs:
+  display-example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install ESP32 Arduino core
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32@3.3.8 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+      - name: Compile 01_DisplayTest
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/01_DisplayTest
