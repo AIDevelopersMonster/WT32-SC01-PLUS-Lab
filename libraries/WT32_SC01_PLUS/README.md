@@ -23,7 +23,8 @@ This is intentionally **not** a copy of the factory firmware. Factory reverse en
 | Backlight | **PHYSICAL PASS** | PWM brightness test accepted |
 | Touch | PENDING | Next validation increment |
 | SD | PENDING | Next validation increment |
-| Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; high-power test completed without controller reset |
+| Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; full high-power run completed |
+| Native USB Serial with audio | **PHYSICAL PASS** | Continuous Serial heartbeat through I2S stress and after deinit |
 | RS485 | PENDING | Not yet promoted into BSP |
 | Combined SelfTest | PENDING | Built only from individually validated drivers |
 
@@ -68,13 +69,23 @@ Display parameters: **480 x 320**, RGB565, 8-bit I80, **10 MHz** write clock.
 | BCLK | 36 |
 | DOUT | 37 |
 
-The Arduino `05_AudioTest` was physically accepted on the Panlee V15 / 230208 specimen. The test exercised a loudness staircase through 100% PCM amplitude, a sustained 15-second 90% tone, and repeated 100% bursts. Audible output increased as expected and the ESP32-S3 did not reboot or show an observed brownout/watchdog failure during the run.
+The Arduino `05_AudioTest` was physically accepted on the Panlee V15 / 230208 specimen. The accepted run exercised:
 
-The test deliberately isolates audio from LCD, touch, Wi-Fi, LVGL, SD and RS485. This makes the result evidence for the onboard I2S/audio path rather than for a combined-system workload.
+- a 1 kHz amplitude staircase at 20%, 35%, 50%, 65%, 80%, 95% and 100%;
+- a sustained 15-second 1 kHz tone at 90%;
+- five repeated 1-second full-scale 100% bursts separated by short silence gaps;
+- I2S initialization and deinitialization;
+- native USB Serial diagnostics before, during and after I2S activity.
 
-### Serial diagnostic caveat
+The complete run finished without an observed controller reboot, panic, watchdog reset or brownout. Serial heartbeat remained visible throughout the sustained high-power section and the full-scale burst sequence, continued after I2S deinitialization, and remained stable for more than one minute after the test.
 
-The physical high-power audio run did not produce visible `Serial` output on the monitored COM port. The connected port was later identified as the ESP32-S3 native USB interface (`VID_303A`, `PID_1001`). Therefore simultaneous `Serial` diagnostics over native USB are **not yet certified by the audio PASS**; USB CDC routing/settings remain a separate interface-validation task. This does not invalidate the observed audio output or no-reset result.
+Heap behavior was also stable during the run: free heap was approximately 348172 bytes before I2S initialization, approximately 340952 bytes throughout active playback, and returned to approximately 348140 bytes after I2S deinitialization. This is consistent with temporary I2S allocation being released after the test; no progressive heap loss was observed in the recorded run.
+
+The connected serial device was the ESP32-S3 native USB interface (`VID_303A`, `PID_1001`). Therefore the accepted run certifies simultaneous onboard audio and native USB Serial operation for this specimen under the tested Arduino configuration.
+
+The reset-reason diagnostic may report `ESP_RST_USB` when the board is reset through its USB peripheral path. This is distinct from panic, watchdog and brownout reset reasons.
+
+The test deliberately isolates audio from LCD, touch, Wi-Fi, LVGL, SD and RS485. This makes the result evidence for the onboard I2S/audio path plus native USB Serial coexistence, not yet for a combined-system workload.
 
 ## Arduino IDE
 
