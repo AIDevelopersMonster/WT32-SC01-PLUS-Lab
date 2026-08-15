@@ -2,7 +2,7 @@
 
 Display-assisted five-point orientation test for the reference **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208** specimen.
 
-**Status:** `READY FOR BUILD / PHYSICAL VALIDATION PENDING`
+**Status:** `PASS — SIMPLE RAW->480x320 ORIENTATION TRANSFORM`
 
 Prerequisite:
 
@@ -11,33 +11,49 @@ HW-02 display path = PASS
 HW-03 raw touch path = PASS
 ```
 
-This test does not replace `02_touch_test`. The raw touch probe remains the canonical proof that the FT6336U-compatible touch read path works. This second-stage test uses the already validated LCD and touch paths together only to determine the coordinate transform.
+This test does not replace `02_touch_test`. The raw touch probe remains the canonical proof that the FT6336U-compatible touch read path works. This second-stage test uses the already validated LCD and touch paths together to determine the coordinate transform.
 
-## Purpose
+## Physical PASS result
 
-The LCD is used as a logical 480x320 landscape display, while the touch controller produces coordinates consistent with a native approximately 320x480 coordinate system.
-
-The test displays five known targets and records the median raw coordinate measured at each one:
+The operator touched the five displayed targets in the requested order and the firmware captured:
 
 ```text
-TOP-LEFT     lcd=( 40, 40)
-TOP-RIGHT    lcd=(439, 40)
-CENTER       lcd=(240,160)
-BOTTOM-LEFT  lcd=( 40,279)
-BOTTOM-RIGHT lcd=(439,279)
+TOP-LEFT     lcd=( 40, 40) raw=(282, 58)
+TOP-RIGHT    lcd=(439, 40) raw=(272,426)
+CENTER       lcd=(240,160) raw=(170,238)
+BOTTOM-LEFT  lcd=( 40,279) raw=( 35, 37)
+BOTTOM-RIGHT lcd=(439,279) raw=( 40,439)
 ```
 
-For each target, five consecutive raw samples are captured and the median X and median Y are stored.
-
-The firmware then evaluates all eight simple axis-orientation candidates formed by:
+The best of the eight simple swap/mirror candidates was:
 
 ```text
-swap_xy   = false / true
-mirror_x  = false / true
-mirror_y  = false / true
+swap_xy  = true
+mirror_x = false
+mirror_y = true
+RMS      = 11.92 px
 ```
 
-and reports their RMS error against the five known LCD target positions.
+The second-best candidate had RMS `214.31 px`, so the orientation result is strongly separated.
+
+For the validated 320x480 native raw geometry and 480x320 LCD landscape geometry, this reduces to the simple integer mapping:
+
+```text
+LCD_X = raw_Y
+LCD_Y = 319 - raw_X
+```
+
+Representative point checks from the physical run:
+
+```text
+raw=(282, 58) -> mapped=( 58, 37), target=( 40, 40)
+raw=(272,426) -> mapped=(426, 47), target=(439, 40)
+raw=(170,238) -> mapped=(238,149), target=(240,160)
+raw=( 35, 37) -> mapped=( 37,284), target=( 40,279)
+raw=( 40,439) -> mapped=(439,279), target=(439,279)
+```
+
+The residual error is dominated by manual touch placement and the deliberately simple no-scale/no-offset mapping. It is sufficiently small for orientation certification, but not a claim of precision calibration.
 
 ## Hardware configuration
 
@@ -72,95 +88,44 @@ address 0x38
 
 The LCD driver performs its normal reset through GPIO4. This same signal also resets/releases the touch controller. After LCD initialization, the firmware waits 250 ms before accessing the touch controller.
 
-Before starting the targets, the firmware requires a successful read of register `0xA0` and expects the already validated FT6336U-compatible value:
+Touch startup during the physical orientation run succeeded immediately after the LCD reset sequence:
 
 ```text
-0xA0 = 0x02
+[TOUCH STARTUP]
+  direct read 0xA0 : 0x02
 ```
 
-If that signature cannot be read after the display reset sequence, the orientation test aborts rather than collecting ambiguous calibration data.
+Thus the integrated LCD + touch startup sequence is validated for this specimen.
 
-## Operator procedure
+## Acceptance conclusion
 
-For each displayed red target:
-
-1. make sure the previous touch has been released;
-2. touch the center of the red target;
-3. hold briefly until the serial monitor prints `CAPTURED`;
-4. release;
-5. repeat for the next target.
-
-The sequence is:
+The simple orientation transform is **PASS** for `panlee-v15-230208-sample-a`:
 
 ```text
-TOP-LEFT
-TOP-RIGHT
-CENTER
-BOTTOM-LEFT
-BOTTOM-RIGHT
+swap_xy=true
+mirror_x=false
+mirror_y=true
 ```
 
-A target times out after 15 seconds if a stable capture is not obtained.
+Equivalent direct transform:
 
-## Expected serial output
-
-A successful capture will contain a block similar to:
-
-```text
-[FIVE-POINT CAPTURE]
-  TOP-LEFT     lcd=( 40, 40) raw=(...,...)
-  TOP-RIGHT    lcd=(439, 40) raw=(...,...)
-  CENTER       lcd=(240,160) raw=(...,...)
-  BOTTOM-LEFT  lcd=( 40,279) raw=(...,...)
-  BOTTOM-RIGHT lcd=(439,279) raw=(...,...)
-
-[TRANSFORM CANDIDATES]
-  #1 swap_xy=... mirror_x=... mirror_y=... RMS=... px
-  ...
-
-[BEST TRANSFORM]
-  swap_xy  : ...
-  mirror_x : ...
-  mirror_y : ...
-  RMS error: ... px
+```c
+lcd_x = raw_y;
+lcd_y = 319 - raw_x;
 ```
 
-The program labels the result `PASS CANDIDATE` only when the best candidate has RMS error <= 35 px and is separated from the second-best candidate by at least 25 px.
-
-The operator must still confirm that the intended five targets were actually touched in the requested order before the result is promoted to a repository-level orientation PASS.
-
-## No persistence / no controller configuration
-
-The test:
-
-- does not write calibration to NVS;
-- does not write files;
-- does not modify touch-controller registers;
-- does not enter touch factory mode;
-- does not calibrate by changing controller firmware parameters.
-
-It only reads touch data and drives the already validated LCD.
-
-## Build
-
-From an activated ESP-IDF 6.0.2 shell:
-
-```powershell
-cd C:\Users\CHUWI\Documents\GitHub\WT32-SC01-PLUS-Lab
-git switch agent/02-touch-test
-git pull
-cd .\examples\02_touch_orientation_test
-idf.py build
-```
-
-After the build has been reviewed:
-
-```powershell
-idf.py -p COM10 flash monitor
-```
+This is the coordinate orientation to use as the baseline for an integrated LVGL touch callback on this specimen.
 
 ## Claim boundary
 
-A successful five-point run can establish the simple swap/mirror orientation required to map the native touch axes into the 480x320 LCD coordinate system.
+This PASS establishes axis swap and mirroring for the tested physical specimen. It does not yet establish:
 
-It does not by itself establish high-precision edge calibration, nonlinear correction, multi-touch calibration, long-term drift, or portability to other WT32-SC01-PLUS OEM revisions.
+- precision edge calibration;
+- per-device scale/offset correction;
+- nonlinear correction;
+- multi-touch calibration;
+- long-term drift;
+- interrupt-driven latency/timing;
+- portability to every WT32-SC01-PLUS OEM revision.
+
+No calibration data was persisted and no touch-controller configuration registers were written.
