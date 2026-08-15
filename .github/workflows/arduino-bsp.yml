@@ -38,6 +38,12 @@ jobs:
             --fqbn esp32:esp32:esp32s3 \
             --library libraries/WT32_SC01_PLUS \
             libraries/WT32_SC01_PLUS/examples/03_StorageTest
+      - name: Compile 04_SDDestructiveTest
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/04_SDDestructiveTest
       - name: Compile 05_AudioTest
         run: |
           arduino-cli compile \
