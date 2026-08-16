@@ -1,9 +1,13 @@
 #include <WiFi.h>
 
-// Leave blank for scan-only validation.
-// For full validation, edit these two lines locally in Arduino IDE.
+#if __has_include("wifi_secrets.h")
+#include "wifi_secrets.h"
+#define WT32_WIFI_LOCAL_SECRETS 1
+#else
 static const char *WIFI_TEST_SSID = "";
 static const char *WIFI_TEST_PASSWORD = "";
+#define WT32_WIFI_LOCAL_SECRETS 0
+#endif
 
 static constexpr uint32_t CONNECT_TIMEOUT_MS = 20000;
 static constexpr uint8_t RECONNECT_CYCLES = 3;
@@ -169,6 +173,8 @@ void setup() {
   Serial.println(" WT32-SC01-PLUS Arduino BSP / 08_WiFiTest");
   Serial.println(" Wi-Fi radio + scan + optional infrastructure validation");
   Serial.println("============================================================");
+  Serial.printf("[INFO] Local secrets header: %s\n",
+                WT32_WIFI_LOCAL_SECRETS ? "wifi_secrets.h loaded" : "not present (scan-only mode)");
 
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
@@ -188,7 +194,7 @@ void setup() {
 
   if (strlen(WIFI_TEST_SSID) == 0) {
     Serial.println("[INFO] WIFI_TEST_SSID is blank: infrastructure tests skipped.");
-    Serial.println("[INFO] Set WIFI_TEST_SSID / WIFI_TEST_PASSWORD locally for full validation.");
+    Serial.println("[INFO] Copy wifi_secrets.example.h to wifi_secrets.h and fill it locally.");
     Serial.println();
     Serial.println("============================================================");
     Serial.println(" WIFI RADIO / SCAN PHYSICAL PASS CANDIDATE");
