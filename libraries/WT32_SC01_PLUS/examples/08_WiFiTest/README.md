@@ -1,5 +1,9 @@
 # 08_WiFiTest — Wi-Fi validation
 
+**Test status:** `PHYSICAL TEST VALIDATED`  
+**Reference specimen:** Panlee `ZX3D50CE08S-V15-USRC / 230208`  
+**Validation date:** 2026-08-16
+
 This Arduino example validates the ESP32-S3 Wi-Fi path in two levels.
 
 ## Credential handling
@@ -49,12 +53,7 @@ It validates:
 - RSSI reporting;
 - authentication-mode reporting.
 
-Expected final status when credentials are absent or blank:
-
-```text
-WIFI RADIO / SCAN PHYSICAL PASS CANDIDATE
-Full association/DHCP/DNS/TCP/reconnect validation: PENDING
-```
+The reference specimen physically passed the scan stage and detected nearby 2.4 GHz networks with valid SSID/BSSID/channel/RSSI/authentication reporting.
 
 ## Level 2 — infrastructure validation
 
@@ -69,12 +68,42 @@ With a populated local `wifi_secrets.h`, the full test performs:
 7. HTTP `HEAD /` request and response-line verification;
 8. three explicit disconnect/reconnect cycles.
 
-Expected final result:
+## Physical validation result
+
+The full infrastructure run passed on the reference specimen:
+
+```text
+Wi-Fi scan        : PASS
+Association       : PASS
+DHCP              : PASS
+DNS               : PASS
+TCP               : PASS
+HTTP              : HTTP/1.1 200 OK
+Reconnect 1/3     : PASS
+Reconnect 2/3     : PASS
+Reconnect 3/3     : PASS
+```
+
+Final diagnostic result:
 
 ```text
 WIFI TEST PHYSICAL PASS CANDIDATE
 Scan + association + DHCP + DNS + TCP/HTTP + reconnect passed.
 ```
+
+This promotes `08_WiFiTest` itself to:
+
+```text
+PHYSICAL TEST VALIDATED
+```
+
+## Video evidence
+
+A real-hardware run showing the Wi-Fi scan, association, DHCP/DNS/TCP/HTTP path and reconnect completion is available here:
+
+[YouTube Shorts — WT32-SC01-PLUS Wi-Fi physical validation](https://youtube.com/shorts/vxB9QxJIfA8)
+
+The video is supporting physical-run evidence. The repository remains the source for the test logic, claim boundary and reproducible procedure.
 
 ## Why HTTP rather than HTTPS in this diagnostic
 
