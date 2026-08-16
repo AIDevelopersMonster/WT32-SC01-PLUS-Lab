@@ -50,3 +50,9 @@ jobs:
             --fqbn esp32:esp32:esp32s3 \
             --library libraries/WT32_SC01_PLUS \
             libraries/WT32_SC01_PLUS/examples/05_AudioTest
+      - name: Compile 08_WiFiTest
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/08_WiFiTest
