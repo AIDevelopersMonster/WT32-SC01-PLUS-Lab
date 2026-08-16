@@ -11,6 +11,10 @@ secrets.h
 __pycache__/
 *.pyc
 
+# Local Wi-Fi credentials for Arduino validation examples.
+# Keep only the tracked *.example.h template in Git.
+libraries/WT32_SC01_PLUS/examples/08_WiFiTest/wifi_secrets.h
+
 # ESP-IDF generated local state. Keep sdkconfig.defaults under version control.
 build/
 sdkconfig
