@@ -25,8 +25,9 @@ Factory reverse engineering is used only as hardware evidence for a clean Arduin
 | SD media anomaly | **WARNING (separate card)** | Earlier ~52 GB-class card reported contradictory raw/FAT geometry; not a board failure |
 | Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; full high-power run completed |
 | Native USB Serial with audio | **PHYSICAL PASS** | Continuous Serial heartbeat through I2S stress |
-| RS485 | PENDING | Not yet promoted into BSP |
-| Combined SelfTest | PENDING | Built only from individually validated drivers |
+| External IO diagnostic | **PHYSICAL TEST VALIDATED** | `07_IOTest`; GPIO10/11/12/13/14/21 independently detected as stable one-hot inputs |
+| RS485 | PENDING | Arduino `06_RS485Test` prepared; external adapter required for physical round-trip validation |
+| Combined SelfTest | PENDING | Next integration stage built only from individually validated paths |
 
 ## Validated LCD mapping
 
@@ -112,6 +113,10 @@ Evidence:
 
 [`evidence/specimens/panlee-v15-230208-sample-a/03_storage_test/arduino-sd-destructive-full-pass-8gb.jpg`](../../evidence/specimens/panlee-v15-230208-sample-a/03_storage_test/arduino-sd-destructive-full-pass-8gb.jpg)
 
+Video evidence showing completion and the final green PASS screen:
+
+[YouTube Shorts — WT32-SC01-PLUS SD full qualification PASS](https://youtube.com/shorts/HVje_STZrCI)
+
 The test does not certify every SD-card model, maximum SDSPI clock, card-detect/write-protect behavior, or all WT32-SC01-PLUS OEM revisions.
 
 ## Validated audio mapping
@@ -124,6 +129,33 @@ The test does not certify every SD-card model, maximum SDSPI clock, card-detect/
 
 `05_AudioTest` physically passed the 20–100% amplitude ramp, 15 s sustained 90% load, repeated 100% bursts, native USB Serial coexistence, and I2S deinit without observed reboot, panic, watchdog or brownout.
 
+## External IO diagnostic
+
+Factory-firmware analysis recovered the six production `IO Test` inputs:
+
+```text
+GPIO10 GPIO11 GPIO12 GPIO13 GPIO14 GPIO21
+```
+
+Arduino `07_IOTest` configures all six as `INPUT_PULLDOWN` and requires a stable strict one-hot HIGH state before accepting a channel.
+
+Physical diagnostic validation was completed on the reference board. Explicit PASS events were observed for all six GPIOs across two manual probing runs:
+
+```text
+GPIO10 PASS
+GPIO11 PASS
+GPIO12 PASS
+GPIO13 PASS
+GPIO14 PASS
+GPIO21 PASS
+```
+
+One incidental brownout reset occurred while manually moving probes on the small 1.25 mm connector. The test restarted normally and no GPIO detection or test-logic failure was observed. Because every channel independently produced its expected stable one-hot PASS event, `07_IOTest` is classified as **PHYSICAL TEST VALIDATED**.
+
+This status primarily certifies the Arduino diagnostic logic and recovered BSP pin mapping on real hardware. It does not claim 5 V tolerance, output-drive capability or reproduction of the original factory fixture.
+
+Detailed protocol: [`examples/07_IOTest/README.md`](examples/07_IOTest/README.md).
+
 ## Arduino IDE
 
 Validated examples:
@@ -133,6 +165,11 @@ Validated examples:
 - `03_StorageTest`
 - `04_SDDestructiveTest`
 - `05_AudioTest`
+- `07_IOTest` — physical diagnostic validation complete
+
+Prepared / awaiting external fixture:
+
+- `06_RS485Test` — requires an external RS485 peer/USB-RS485 adapter
 
 Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
 
@@ -142,4 +179,4 @@ The pin mapping is validated only for the Panlee `ZX3D50CE08S-V15-USRC / 230208`
 
 ## Safety boundary
 
-Normal BSP examples avoid factory fixture-only/destructive operations. `04_SDDestructiveTest` is intentionally separate because it overwrites the entire inserted card. It requires on-device operator confirmation before the destructive sequence begins.
+Normal BSP examples avoid factory fixture-only/destructive operations. `04_SDDestructiveTest` is intentionally separate because it overwrites the entire inserted card. It requires on-device operator confirmation before the destructive sequence begins. `07_IOTest` is input-only and must use a known-safe 3.3 V stimulus; the Extended I/O connector `+` rail must not be used as a GPIO stimulus source.
