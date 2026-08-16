@@ -21,8 +21,8 @@ Factory reverse engineering is used only as hardware evidence for a clean Arduin
 | Backlight | **PHYSICAL PASS** | PWM brightness accepted |
 | Touch | **PHYSICAL PASS** | FT6336U-compatible, five-point Arduino test passed |
 | SD read path | **PHYSICAL PASS** | SDSPI GPIO39/40/38/41 @ 10 MHz; FAT mount + raw/file reads |
-| SD media integrity | **WARNING** | Tested card reports contradictory raw/FAT capacity; not a board failure |
-| SD write/full-media test | PENDING | Must be a separately armed destructive test |
+| SD full-media write/verify | **PHYSICAL PASS** | Autonomous 8 GB qualification: full 0x00/0xAA/0x55 write + readback, FAT restored |
+| SD media anomaly | **WARNING (separate card)** | Earlier ~52 GB-class card reported contradictory raw/FAT geometry; not a board failure |
 | Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; full high-power run completed |
 | Native USB Serial with audio | **PHYSICAL PASS** | Continuous Serial heartbeat through I2S stress |
 | RS485 | PENDING | Not yet promoted into BSP |
@@ -60,7 +60,7 @@ LCD_X = raw_Y
 LCD_Y = 319 - raw_X
 ```
 
-## Validated SD read path
+## Validated SD path
 
 | Signal | GPIO |
 |---|---:|
@@ -69,18 +69,50 @@ LCD_Y = 319 - raw_X
 | MISO | 38 |
 | CS | 41 |
 
+### Read-only validation
+
 The Arduino `03_StorageTest` physically passed on the reference specimen at **10 MHz**. It validated:
 
 - SDHC initialization and Arduino `SD` FAT mount;
-- raw capacity report: `106496000` sectors × 512 bytes (~52000 MiB);
-- raw sector 0 read with signature `0xAA55`;
+- raw sector 0 read;
 - root directory enumeration;
-- readback of existing `FOO.TXT` (10 bytes) with checksum `0x65D91DDD`;
-- no write operation performed by the test.
+- file readback without modifying the card.
 
-The same card reports FAT total space of about **61423 MiB**, greater than its raw card-reported capacity (~52000 MiB). This is retained as a **media geometry warning**. The board-side SDSPI read path is PASS, while the card's true capacity/integrity is not certified.
+The earlier card used for this run reported contradictory raw/FAT geometry. That warning is retained as media-specific evidence and is not treated as a board-path failure.
 
-A full write/read qualification must be a separate explicitly destructive test because it destroys the partition table, filesystem and all files.
+### Autonomous full-media qualification
+
+The Arduino `04_SDDestructiveTest` subsequently completed a full destructive qualification on a separate 8 GB-class card.
+
+The test runs autonomously on the WT32-SC01-PLUS using the LCD and touch interface. It uses 64-sector / 32 KiB multi-sector transfers at **10 MHz** and performs:
+
+```text
+1/7  full-card WRITE  0x00
+2/7  full-card VERIFY 0x00
+3/7  full-card WRITE  0xAA
+4/7  full-card VERIFY 0xAA
+5/7  full-card WRITE  0x55
+6/7  full-card VERIFY 0x55
+7/7  FAT restore + probe-file write/read/delete
+```
+
+Physical final screen:
+
+```text
+PASS
+00 AA 55 VERIFIED
+FAT RESTORED
+CARD EMPTY AND READY
+7680 MiB / 15728640 SECTORS
+```
+
+This promotes the named specimen's SD write path to **PHYSICAL PASS** for the tested 8 GB card at 10 MHz.
+
+Evidence:
+
+[`evidence/specimens/panlee-v15-230208-sample-a/03_storage_test/arduino-sd-destructive-full-pass-8gb.jpg`](../../evidence/specimens/panlee-v15-230208-sample-a/03_storage_test/arduino-sd-destructive-full-pass-8gb.jpg)
+
+The test does not certify every SD-card model, maximum SDSPI clock, card-detect/write-protect behavior, or all WT32-SC01-PLUS OEM revisions.
 
 ## Validated audio mapping
 
@@ -99,6 +131,7 @@ Validated examples:
 - `01_DisplayTest`
 - `02_TouchTest`
 - `03_StorageTest`
+- `04_SDDestructiveTest`
 - `05_AudioTest`
 
 Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
@@ -109,4 +142,4 @@ The pin mapping is validated only for the Panlee `ZX3D50CE08S-V15-USRC / 230208`
 
 ## Safety boundary
 
-Normal BSP examples avoid factory fixture-only/destructive operations. Any full-media SD overwrite test must live in a separately named destructive example and require explicit operator arming before the first write.
+Normal BSP examples avoid factory fixture-only/destructive operations. `04_SDDestructiveTest` is intentionally separate because it overwrites the entire inserted card. It requires on-device operator confirmation before the destructive sequence begins.
