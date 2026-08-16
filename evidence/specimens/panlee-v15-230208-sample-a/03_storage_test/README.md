@@ -1,31 +1,17 @@
 # 03_storage_test — physical validation protocol
 
-**Status:** `PASS WITH MEDIA ANOMALY`  
-**Board hardware result:** `PASS`  
-**Media consistency result:** `WARNING`  
+**Subsystem status:** `PHYSICAL PASS`  
+**Read-path status:** `PASS`  
+**Full-media write/verify status:** `PASS`  
+**Reference specimen:** `panlee-v15-230208-sample-a`  
+**Board marking:** Panlee / `ZX3D50CE08S-V15-USRC` / `230208`
 
-**Acceptance stage:** `HW-04`  
-**Specimen:** `panlee-v15-230208-sample-a`  
-**Board marking:** Panlee / `ZX3D50CE08S-V15-USRC` / `230208`  
-**Physical run date:** 2026-08-15  
-**Test project:** [`examples/03_storage_test`](../../../../examples/03_storage_test/)  
-**Application version:** `8874b2b`  
-**ESP-IDF:** `v6.0.2`
+This evidence directory now contains two distinct SD validation runs:
 
-## Purpose
+1. the original read-only ESP-IDF storage probe on a card with contradictory partition geometry;
+2. the later autonomous Arduino full-media destructive qualification on a separate 8 GB card.
 
-This run validates the physical SD-card read path independently of the original factory firmware while deliberately avoiding all filesystem and sector writes.
-
-The test exercises:
-
-- ESP32-S3 SPI master;
-- SDSPI card initialization;
-- recovered SD pin mapping;
-- SD card metadata readout;
-- raw sector 0 read;
-- MBR partition-table parsing;
-- first-partition boot-sector read;
-- consistency check between MBR partition extents and card-reported CSD capacity.
+The two cards and conclusions must not be conflated.
 
 ## Physically validated SDSPI mapping
 
@@ -36,146 +22,150 @@ The test exercises:
 | SD MISO / DO | 38 |
 | SD CS | 41 |
 
-These signals were previously recovered from the factory firmware. `03_storage_test` now provides direct physical confirmation that this mapping can initialize and read a real SD card on the named specimen.
+Validated clock for the documented runs: **10 MHz**.
 
-## Test configuration
+---
 
-```text
-SDSPI clock              : 10000 kHz
-Filesystem mount         : NO
-Sector writes            : NO
-Format / create / rename : NO
-Read scope               : metadata + sector 0 + first partition boot sector
-```
+## Run A — read-only board-path validation
 
-The test uses only raw read operations for card data. It does not mount FAT and does not call `sdmmc_write_sectors()`.
+**Date:** 2026-08-15  
+**Project:** [`examples/03_storage_test`](../../../../examples/03_storage_test/)  
+**ESP-IDF:** `v6.0.2`  
+**Result:** `PASS WITH MEDIA ANOMALY`
 
-## Boot / application result
+This run deliberately avoided all writes and validated the physical SDSPI read path independently of the factory firmware.
 
-The board booted normally under ESP-IDF 6.0.2:
-
-```text
-Project name: wt32_sc01_plus_storage_test
-App version : 8874b2b
-ESP-IDF     : v6.0.2
-Chip rev    : v0.2
-Flash       : 16MB
-PSRAM       : 2MB, 40MHz, memory test OK
-```
-
-The application reached `app_main()`, completed the storage probe and returned normally.
-
-## SD-card initialization result
-
-The card initialized successfully over SDSPI:
+Observed card data:
 
 ```text
 Name: SD
 Type: SDHC
-Speed: 10.00 MHz (limit: 10.00 MHz)
+Speed: 10.00 MHz
 Size: 52000MB
-CSD: ver=2, sector_size=512, capacity=106496000 read_bl_len=9
-SSR: bus_width=1
-SDSPI actual clock: 10000 kHz
+Sector size: 512
+CSD capacity: 106496000 sectors
 ```
 
-During protocol probing, the log included unsupported responses for CMD52 and CMD5. They did not prevent SD memory-card initialization and are not classified as a board failure in this successful run.
-
-## Raw sector read result
-
-Sector 0 was read successfully and contained a valid `0x55AA` signature.
-
-The first MBR partition entry was:
+Sector 0 and the first partition boot sector were read successfully. The MBR declared:
 
 ```text
-Partition 1
-Type          : 0x0C
-Start LBA     : 2048
-Sector count  : 125827072
-End exclusive : 125829120
+Partition 1 type       : 0x0C
+Start LBA              : 2048
+Sector count           : 125827072
+End exclusive          : 125829120
 ```
 
-The first partition boot sector at LBA 2048 was also read successfully:
+The partition boot sector was FAT32-compatible:
 
 ```text
-Signature           : 0x55AA
-OEM / system field  : MSDOS5.0
-Bytes per sector    : 512
-Sectors per cluster : 64
-Reserved sectors    : 38
-FAT count           : 2
-Filesystem hint     : FAT32
+Signature              : 0x55AA
+OEM/system field       : MSDOS5.0
+Bytes per sector       : 512
+Sectors per cluster    : 64
+Reserved sectors       : 38
+FAT count              : 2
+Filesystem hint        : FAT32
 ```
 
-This directly confirms that the board can perform actual data reads from the inserted card, not merely detect card presence.
-
-## Capacity-consistency warning
-
-The automatic geometry audit detected that the partition table declares an extent beyond the capacity reported by the card CSD:
+The geometry audit found:
 
 ```text
 CSD addressable sectors : 106496000
-MBR maximum end         : 125829120 (exclusive)
+MBR maximum end         : 125829120
 MBR vs CSD geometry     : WARNING - PARTITION EXTENT EXCEEDS CSD CAPACITY
 ```
 
-Therefore the run is intentionally classified as:
+Therefore this specific media was classified as anomalous, while the board-side read path was PASS.
+
+No write-path claim was made from Run A.
+
+---
+
+## Run B — autonomous full-media destructive qualification
+
+**Date:** 2026-08-16  
+**Arduino example:** [`libraries/WT32_SC01_PLUS/examples/04_SDDestructiveTest`](../../../../libraries/WT32_SC01_PLUS/examples/04_SDDestructiveTest/)  
+**Interface:** on-board LCD + touch; Serial diagnostic only  
+**Test card:** separate 8 GB-class SD card  
+**Detected capacity:** `15728640` sectors × 512 bytes = `7680 MiB`  
+**Result:** `PHYSICAL PASS`
+
+The test was intentionally destructive and operated across the entire card-reported LBA range using 32 KiB multi-sector transfers:
 
 ```text
-SDSPI read path           : PASS
-Card capacity consistency : WARNING - MBR EXCEEDS CSD CAPACITY
-RESULT                    : PASS WITH MEDIA ANOMALY
+64 sectors × 512 bytes = 32768 bytes per transfer
 ```
 
-This warning is evidence about the inserted SD card / its partition geometry. It is **not** evidence of failure in the WT32-SC01-PLUS SDSPI hardware path.
-
-Possible causes of the media anomaly are intentionally left unresolved by this test. The read-only board validation does not distinguish among stale/incorrect partitioning, unusual card behavior, incorrect capacity reporting, or other media-specific causes.
-
-## Safety audit
-
-The firmware reported:
+Qualification sequence:
 
 ```text
-FAT filesystem mounted : no
-Files opened           : no
-Files created/renamed  : no
-Sectors written        : no
-Card formatted         : no
+1/7  WRITE  0x00 over full media
+2/7  VERIFY 0x00 by full readback and byte comparison
+3/7  WRITE  0xAA over full media
+4/7  VERIFY 0xAA by full readback and byte comparison
+5/7  WRITE  0x55 over full media
+6/7  VERIFY 0x55 by full readback and byte comparison
+7/7  restore FAT + probe-file write/read/delete
 ```
 
-No write-path validation is claimed.
+Final on-device result:
 
-## Physical PASS conclusion
+```text
+PASS
+00 AA 55 VERIFIED
+FAT RESTORED
+CARD EMPTY AND READY
+7680 MiB / 15728640 SECTORS
+```
 
-**HW-04 SD/SDSPI read path: PASS for `panlee-v15-230208-sample-a` at 10 MHz.**
+The final PASS photograph is stored as:
 
-Directly validated:
+[`arduino-sd-destructive-full-pass-8gb.jpg`](./arduino-sd-destructive-full-pass-8gb.jpg)
 
-- GPIO39 CLK;
-- GPIO40 MOSI;
-- GPIO38 MISO;
-- GPIO41 CS;
-- SDSPI card initialization;
-- SDHC communication;
-- stable operation at the tested 10 MHz clock;
-- sector 0 read;
-- MBR read/parsing;
-- first partition boot-sector read;
-- normal application completion without panic, watchdog reset or read timeout.
+### What Run B physically validates
+
+- SDSPI writes through GPIO39/40/38/41 at 10 MHz;
+- multi-sector 32 KiB write transfers;
+- multi-sector 32 KiB read transfers;
+- full-card `0x00` write + byte-for-byte readback;
+- full-card `0xAA` write + byte-for-byte readback;
+- full-card `0x55` write + byte-for-byte readback;
+- successful FAT restoration after destructive raw testing;
+- successful probe-file write;
+- successful probe-file readback/verification;
+- successful probe-file deletion;
+- autonomous LCD/touch operator flow through completion.
+
+### Final media state
+
+After PASS, the 8 GB test card is **not** left filled with `0x55`. The filesystem is restored and the temporary probe file is removed, leaving the card empty and ready for normal use.
+
+---
+
+## Physical conclusion
+
+For the named Panlee V15 / 230208 specimen:
+
+```text
+SDSPI physical mapping           : PASS
+Read path @ 10 MHz               : PASS
+Write path @ 10 MHz              : PASS
+Full-media 00/AA/55 verification : PASS (8 GB test card)
+FAT restoration                  : PASS
+Autonomous LCD/touch workflow    : PASS
+```
+
+The earlier 52 GB-class card retains its documented geometry warning. The later 8 GB card was used specifically for the full destructive qualification and completed the entire test successfully.
 
 ## Claim boundary
 
-This PASS does **not** validate:
+These results do **not** establish:
 
-- SD-card write operations;
-- FAT filesystem mounting;
-- file creation/modification;
-- filesystem integrity;
-- the integrity or true capacity of the tested SD card;
+- integrity of the earlier anomalous 52 GB-class card;
+- maximum stable SDSPI clock;
 - hot-plug/card-detect behavior;
 - write-protect behavior;
-- maximum stable SDSPI clock;
-- every SD-card model/capacity;
-- all WT32-SC01-PLUS OEM revisions.
+- correctness of every SD-card make/model/capacity;
+- identical pinout or behavior across all WT32-SC01-PLUS OEM revisions.
 
-If a write-path test is added later, it should use a dedicated expendable SD card under a separately declared destructive-test protocol.
+The PASS is hardware- and specimen-specific to the declared Panlee `ZX3D50CE08S-V15-USRC / 230208` reference board and the explicitly tested cards.
