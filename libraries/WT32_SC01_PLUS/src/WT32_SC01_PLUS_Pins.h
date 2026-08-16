@@ -41,7 +41,6 @@ static constexpr uint8_t TOUCH_ADDR = 0x38;
 static constexpr uint32_t TOUCH_I2C_HZ = 400000;
 
 // PHYSICALLY VALIDATED on Panlee V15 / 230208 by independent ESP-IDF SDSPI read test.
-// Arduino write-path validation is intentionally separate.
 static constexpr int SD_SCK  = 39;
 static constexpr int SD_MOSI = 40;
 static constexpr int SD_MISO = 38;
@@ -52,6 +51,15 @@ static constexpr uint32_t SD_SPI_HZ = 10000000;
 static constexpr int AUDIO_LRCK = 35;
 static constexpr int AUDIO_BCLK = 36;
 static constexpr int AUDIO_DOUT = 37;
+
+// FACTORY-FIRMWARE RECOVERED from the Panlee V15 / 230208 production IO test.
+// Arduino physical validation is intentionally separate and pending.
+static constexpr int EXT_IO0 = 10;
+static constexpr int EXT_IO1 = 11;
+static constexpr int EXT_IO2 = 12;
+static constexpr int EXT_IO3 = 13;
+static constexpr int EXT_IO4 = 14;
+static constexpr int EXT_IO5 = 21;
 
 } // namespace pins
 } // namespace wt32sc01plus
