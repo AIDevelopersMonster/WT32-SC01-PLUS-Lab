@@ -1,5 +1,9 @@
 # 09_BLETest — Bluetooth Low Energy validation
 
+**Test status:** `PHYSICAL TEST VALIDATED`  
+**Reference specimen:** Panlee `ZX3D50CE08S-V15-USRC / 230208`  
+**Validation date:** 2026-08-17
+
 This Arduino example validates the ESP32-S3 BLE path in two stages.
 
 ## Stage 1 — autonomous BLE scan
@@ -12,13 +16,6 @@ The sketch:
 - performs a 6 s active BLE scan;
 - prints advertisement address, RSSI and device name when present;
 - counts discovered BLE devices.
-
-Expected intermediate result:
-
-```text
-BLE RADIO / SCAN PHYSICAL PASS CANDIDATE
-Advertising/GATT validation: PENDING USER ACTION
-```
 
 ## Stage 2 — peripheral / GATT validation
 
@@ -69,16 +66,51 @@ WT32-BLE-PING
 WT32-BLE-PONG
 ```
 
-Expected Serial Monitor result:
+## Physical validation result
+
+The real-hardware run completed successfully.
+
+Observed sequence:
 
 ```text
 [PASS] BLE client connected
+[GATT] RX: test
+[INFO] Write received, but expected WT32-BLE-PING
+[INFO] BLE client disconnected; advertising restarted
+[PASS] BLE client connected
+[GATT] RX: WT32-BLE-PING
 [PASS] GATT write matched WT32-BLE-PING
 [PASS] Characteristic updated/notified with WT32-BLE-PONG
+```
 
+Final result:
+
+```text
 BLE TEST PHYSICAL PASS CANDIDATE
 Scan + advertise + connect + GATT read/write/notify passed.
 ```
+
+This promotes `09_BLETest` itself to:
+
+```text
+PHYSICAL TEST VALIDATED
+```
+
+The initial incorrect payload `test` is useful negative-path evidence: the diagnostic correctly rejected it and did not issue the final PASS until the expected `WT32-BLE-PING` transaction was received. The board also restarted advertising after the first client disconnected.
+
+## What is validated
+
+The physical run confirms that the diagnostic successfully exercises:
+
+- BLE stack initialization;
+- BLE radio discovery / scan path;
+- peripheral advertising;
+- client connection;
+- disconnect and advertising restart;
+- GATT characteristic access;
+- write payload validation;
+- characteristic update / notification response;
+- end-to-end application-level PING/PONG over BLE GATT.
 
 ## Claim boundary
 
