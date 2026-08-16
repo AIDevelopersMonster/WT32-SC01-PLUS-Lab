@@ -2,6 +2,38 @@
 
 This Arduino example validates the ESP32-S3 Wi-Fi path in two levels.
 
+## Credential handling
+
+Real Wi-Fi credentials are kept out of Git.
+
+The repository tracks only:
+
+```text
+wifi_secrets.example.h
+```
+
+To enable the full infrastructure test, copy it locally to:
+
+```text
+wifi_secrets.h
+```
+
+and fill in:
+
+```cpp
+static const char *WIFI_TEST_SSID = "your-ssid";
+static const char *WIFI_TEST_PASSWORD = "your-password";
+```
+
+`wifi_secrets.h` is explicitly listed in the repository `.gitignore` and must never be committed.
+
+The sketch uses `__has_include("wifi_secrets.h")`:
+
+- if the local secrets file exists, it is loaded and the full test runs;
+- if it does not exist, safe empty credentials are compiled in and the test automatically stays in scan-only mode.
+
+This means CI and GitHub always build with non-secret placeholder credentials while local Arduino IDE runs can use the real network.
+
 ## Level 1 — radio / scan validation
 
 This level requires no credentials and runs automatically after flashing.
@@ -17,7 +49,7 @@ It validates:
 - RSSI reporting;
 - authentication-mode reporting.
 
-Expected final status when credentials are left blank:
+Expected final status when credentials are absent or blank:
 
 ```text
 WIFI RADIO / SCAN PHYSICAL PASS CANDIDATE
@@ -26,16 +58,7 @@ Full association/DHCP/DNS/TCP/reconnect validation: PENDING
 
 ## Level 2 — infrastructure validation
 
-For the full test, edit these two lines locally in `08_WiFiTest.ino`:
-
-```cpp
-static const char *WIFI_TEST_SSID = "your-ssid";
-static const char *WIFI_TEST_PASSWORD = "your-password";
-```
-
-Do not commit real credentials to the repository.
-
-The full test performs:
+With a populated local `wifi_secrets.h`, the full test performs:
 
 1. active Wi-Fi scan;
 2. association to the configured AP;
