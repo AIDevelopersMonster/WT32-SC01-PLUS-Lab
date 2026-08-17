@@ -1,0 +1,7 @@
+# Arduino sketch metadata for WT32-SC01-PLUS examples.
+# Selects Espressif's generic ESP32-S3 target without defining a custom board.
+# The serial port is intentionally not stored because COM numbering is host-specific.
+
+default_fqbn: esp32:esp32:esp32s3
+default_port_config:
+  baudrate: 115200

@@ -19,3 +19,6 @@ sdkconfig.old
 # Local board identity captures may contain MAC addresses, eFuse data,
 # host paths, serial-port details and other specimen-specific information.
 board-info/
+
+# Local Wi-Fi credentials for 08_WiFiTest. Never commit this file.
+libraries/WT32_SC01_PLUS/examples/08_WiFiTest/wifi_secrets.h

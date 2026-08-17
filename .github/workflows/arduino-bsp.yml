@@ -1,9 +1,6 @@
 name: Arduino BSP CI
 
 on:
-  push:
-    branches:
-      - agent/arduino-bsp-v0.1-display
   pull_request:
     paths:
       - 'libraries/WT32_SC01_PLUS/**'
@@ -20,39 +17,14 @@ jobs:
           arduino-cli config init
           arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core install esp32:esp32@3.3.8 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-      - name: Compile 01_DisplayTest
+      - name: Compile all Arduino examples
         run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
-            --library libraries/WT32_SC01_PLUS \
-            libraries/WT32_SC01_PLUS/examples/01_DisplayTest
-      - name: Compile 02_TouchTest
-        run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
-            --library libraries/WT32_SC01_PLUS \
-            libraries/WT32_SC01_PLUS/examples/02_TouchTest
-      - name: Compile 03_StorageTest
-        run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
-            --library libraries/WT32_SC01_PLUS \
-            libraries/WT32_SC01_PLUS/examples/03_StorageTest
-      - name: Compile 04_SDDestructiveTest
-        run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
-            --library libraries/WT32_SC01_PLUS \
-            libraries/WT32_SC01_PLUS/examples/04_SDDestructiveTest
-      - name: Compile 05_AudioTest
-        run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
-            --library libraries/WT32_SC01_PLUS \
-            libraries/WT32_SC01_PLUS/examples/05_AudioTest
-      - name: Compile 06_RS485Test
-        run: |
-          arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
-            --library libraries/WT32_SC01_PLUS \
-            libraries/WT32_SC01_PLUS/examples/06_RS485Test
+          for example in \
+            01_DisplayTest 02_TouchTest 03_StorageTest 04_SDDestructiveTest 05_AudioTest \
+            06_RS485Test 07_IOTest 08_WiFiTest 09_BLETest 10_TestConsole; do
+            echo "Compiling $example"
+            arduino-cli compile \
+              --fqbn esp32:esp32:esp32s3 \
+              --library libraries/WT32_SC01_PLUS \
+              "libraries/WT32_SC01_PLUS/examples/$example"
+          done
