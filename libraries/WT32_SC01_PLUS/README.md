@@ -12,6 +12,59 @@ Experimental Arduino board-support library for the WT32-SC01-PLUS family, develo
 
 Factory reverse engineering is used only as hardware evidence for a clean Arduino BSP.
 
+## Arduino IDE installation
+
+The library can be distributed as a standalone ZIP without cloning the full repository.
+
+GitHub Actions builds:
+
+```text
+WT32_SC01_PLUS-Arduino-v<version>.zip
+```
+
+from exactly:
+
+```text
+libraries/WT32_SC01_PLUS
+```
+
+Install it in Arduino IDE with:
+
+```text
+Sketch -> Include Library -> Add .ZIP Library...
+```
+
+The packaging workflow runs on relevant `main` updates and can also be started manually. A tag matching `arduino-v*` publishes the same ZIP as a GitHub Release asset.
+
+Current library version is defined in `library.properties`.
+
+Real Wi-Fi credentials are never packaged: `examples/08_WiFiTest/wifi_secrets.h` is local-only and explicitly excluded from the generated ZIP.
+
+## Arduino examples
+
+The library contains the complete diagnostic set:
+
+```text
+01_DisplayTest
+02_TouchTest
+03_StorageTest
+04_SDDestructiveTest
+05_AudioTest
+06_RS485Test
+07_IOTest
+08_WiFiTest
+09_BLETest
+10_TestConsole
+```
+
+`10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
+
+Combined-console video evidence:
+
+[YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
+
+Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
+
 ## v0.1 status
 
 | Subsystem | Status | Notes |
@@ -25,8 +78,11 @@ Factory reverse engineering is used only as hardware evidence for a clean Arduin
 | SD media anomaly | **WARNING (separate card)** | Earlier ~52 GB-class card reported contradictory raw/FAT geometry; not a board failure |
 | Audio | **PHYSICAL PASS** | I2S GPIO35/36/37; full high-power run completed |
 | Native USB Serial with audio | **PHYSICAL PASS** | Continuous Serial heartbeat through I2S stress |
-| RS485 | PENDING | Not yet promoted into BSP |
-| Combined SelfTest | PENDING | Built only from individually validated drivers |
+| External IO | **PHYSICAL PASS** | GPIO10/11/12/13/14/21 one-hot input validation |
+| Wi-Fi | **PHYSICAL PASS** | Scan + association + DHCP + DNS + TCP/HTTP + reconnect |
+| BLE | **PHYSICAL PASS** | Scan + advertise + connect + GATT PING/PONG |
+| RS485 | PENDING | Dedicated test included; external peer validation pending |
+| Combined TestConsole | AVAILABLE | Modular CLI + touch-GUI launcher |
 
 ## Validated LCD mapping
 
@@ -122,19 +178,7 @@ The test does not certify every SD-card model, maximum SDSPI clock, card-detect/
 | BCLK | 36 |
 | DOUT | 37 |
 
-`05_AudioTest` physically passed the 20–100% amplitude ramp, 15 s sustained 90% load, repeated 100% bursts, native USB Serial coexistence, and I2S deinit without observed reboot, panic, watchdog or brownout.
-
-## Arduino IDE
-
-Validated examples:
-
-- `01_DisplayTest`
-- `02_TouchTest`
-- `03_StorageTest`
-- `04_SDDestructiveTest`
-- `05_AudioTest`
-
-Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
+`05_AudioTest` physically passed the 20–100% amplitude ramp, 15 s sustained 90% load, repeated 100% bursts, native USB Serial coexistence, and I2S deinit without observed reboot, panic, watchdog or brownout during the controlled audio qualification run.
 
 ## Hardware profile warning
 
