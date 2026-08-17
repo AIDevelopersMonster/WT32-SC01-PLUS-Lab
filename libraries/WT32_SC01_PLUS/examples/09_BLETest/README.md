@@ -98,6 +98,14 @@ PHYSICAL TEST VALIDATED
 
 The initial incorrect payload `test` is useful negative-path evidence: the diagnostic correctly rejected it and did not issue the final PASS until the expected `WT32-BLE-PING` transaction was received. The board also restarted advertising after the first client disconnected.
 
+## Video evidence
+
+Supporting real-hardware video:
+
+[YouTube Shorts — WT32-SC01-PLUS BLE physical validation](https://youtube.com/shorts/vxB9QxJIfA8)
+
+The video is supporting physical-run evidence; the repository remains the source for the test logic, procedure and claim boundary.
+
 ## What is validated
 
 The physical run confirms that the diagnostic successfully exercises:
