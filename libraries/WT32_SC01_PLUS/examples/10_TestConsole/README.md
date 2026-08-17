@@ -62,6 +62,14 @@ The GUI deliberately uses only the already-validated BSP display/touch primitive
 | 8 | RS485 | `PENDING` until external adapter/peer validation |
 | 9 | System | board/flash/PSRAM/heap information |
 
+## Video evidence
+
+Supporting real-hardware video for the combined Arduino test console:
+
+[YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
+
+The video is supporting operator evidence for the combined launcher/UI workflow. The dedicated examples remain the source for deeper qualification procedures and claim boundaries.
+
 ## Why the dedicated tests remain separate
 
 The existing examples remain the authoritative deep/qualification tests. For example:
