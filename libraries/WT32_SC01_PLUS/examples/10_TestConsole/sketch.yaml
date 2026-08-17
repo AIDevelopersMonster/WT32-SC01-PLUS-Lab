@@ -1,0 +1,4 @@
+# Arduino sketch metadata for WT32-SC01-PLUS examples.
+default_fqbn: esp32:esp32:esp32s3
+default_port_config:
+  baudrate: 115200
