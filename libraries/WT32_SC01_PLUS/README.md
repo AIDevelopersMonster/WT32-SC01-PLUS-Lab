@@ -86,7 +86,21 @@ Combined-console video evidence:
 | BLE | **PHYSICAL PASS** | Scan + advertise + connect + GATT PING/PONG |
 | RS485 | PENDING | Dedicated test included; external peer validation pending |
 | Combined TestConsole | AVAILABLE | Modular CLI + touch-GUI launcher |
-| RainbowTouch demo | SOURCE ADDED / PHYSICAL RUN PENDING | Interactive BSP example; not yet promoted to physical pass |
+| RainbowTouch demo | **PHYSICAL PASS** | Interactive BSP demo: touch painting and coordinate-mapped RGB565 trail physically observed on Panlee V15 / 230208 |
+
+## RainbowTouch physical demonstration
+
+`11_RainbowTouch` was compiled, uploaded, and physically observed on the reference Panlee specimen on 2026-08-18.
+
+Observed behavior:
+
+- touch input initialized successfully;
+- finger motion produced a persistent trail;
+- the trail followed touch position across the display;
+- color varied continuously over screen coordinates using the simple `map()`-based RGB field;
+- drawing used only the BSP application API (`touch().read()` + `display().fillRect()`), with no LovyanGFX dependency in the sketch.
+
+This example is therefore promoted from source-only status to **PHYSICAL PASS** for the named specimen.
 
 ## Validated LCD mapping
 
