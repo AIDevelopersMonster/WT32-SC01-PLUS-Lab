@@ -13,89 +13,92 @@ ZX3D50CE08S-V15-USRC
 ESP32-S3 (QFN56), revision v0.2
 ```
 
-## Upstream target
+## Upstream Sukesh/LovyanGFX validation
 
-Sukesh Akhilesh minimal WT32-SC01-PLUS Arduino/LovyanGFX touch-drawing Gist:
+Canonical source:
 
 https://gist.github.com/sukesh-ak/610508bc84779a26efdcf969bf51a2d1
 
 The upstream source is not mirrored here because an explicit redistribution license was not identified during this review.
 
-## Environment
+Environment observed during the test:
 
 - Arduino IDE
-- Board selection: `ESP32S3 Dev Module`
-- ESP32 Arduino core observed during upload: `3.3.11`
-- `esptool` observed during upload: `5.3.1`
-- Required external display/touch library: LovyanGFX
+- Board: `ESP32S3 Dev Module`
+- ESP32 Arduino core: `3.3.11`
+- esptool: `5.3.1`
+- external dependency: LovyanGFX
 
-## Dependency check
+Before LovyanGFX was installed, compilation failed with `LovyanGFX.hpp: No such file or directory`. After installing LovyanGFX, the original sketch compiled, uploaded, and ran successfully.
 
-Before LovyanGFX was installed, compilation failed as expected with:
-
-```text
-fatal error: LovyanGFX.hpp: No such file or directory
-```
-
-After installing LovyanGFX, the original sketch compiled and uploaded successfully. The resulting display and touch demo then ran on the physical board.
-
-This establishes a practical compatibility result for the tested combination:
-
-```text
-Panlee WT32-SC01-PLUS
-+ Arduino IDE / ESP32S3 Dev Module
-+ LovyanGFX
-+ Sukesh minimal touch-drawing sketch
-= PHYSICAL PASS
-```
-
-## Compile/upload record
-
-```text
-Sketch uses 366715 bytes (27%) of program storage space.
-Maximum is 1310720 bytes.
-Global variables use 24484 bytes (7%) of dynamic memory,
-leaving 303196 bytes for local variables.
-Maximum is 327680 bytes.
-
-Connected to ESP32-S3 on COM10:
-Chip type:          ESP32-S3 (QFN56) (revision v0.2)
-Features:           Wi-Fi, BT 5 (LE), Dual Core + LP Core, 240MHz,
-                    Embedded PSRAM 2MB (AP_3v3)
-Crystal frequency:  40MHz
-USB mode:           USB-Serial/JTAG
-MAC:                48:27:e2:1f:30:5c
-```
-
-The bootloader, partition table, `boot_app0`, and application image were written successfully. `esptool` verified the hash of each written image and completed with:
-
-```text
-Hard resetting via RTS pin...
-```
-
-## Physical observations
+Observed upstream results:
 
 | Function | Result |
 |---|---|
-| Display initialization | **PASS** |
-| ST7796 image output | **PASS** |
+| Compile/upload | **PASS** |
+| ST7796 output | **PASS** |
 | Touch controller input | **PASS** |
 | Live touch coordinates | **PASS** |
 | Touch-drawing trace | **PASS** |
-| 16 MB flash detection in sketch | **PASS** |
+| 16 MB flash detection | **PASS** |
 | 2 MB embedded PSRAM detected by esptool | **PASS** |
-| PSRAM exposed to sketch in tested generic Arduino configuration | **NO — sketch displayed 0 bytes** |
 
-The `0 bytes` runtime PSRAM result is recorded as a configuration observation, not as evidence that the physical board lacks PSRAM. The upload-time chip probe explicitly detected 2 MB embedded PSRAM.
+The upstream runtime displayed PSRAM as `0 bytes` in the tested generic Arduino configuration. This is recorded as a configuration observation, not evidence that the physical board lacks PSRAM.
 
-## Video evidence
-
-Physical demonstration:
+Video evidence — upstream Sukesh/LovyanGFX:
 
 https://youtube.com/shorts/5CkP_Jh4ofo
 
-The video shows the real WT32-SC01-PLUS running the upstream touch-drawing demonstration, including active display output and touch response.
+## Our WT32_SC01_PLUS RainbowTouch validation
+
+An independently written analogue was then implemented using this repository's board-specific Arduino BSP:
+
+`libraries/WT32_SC01_PLUS/examples/11_RainbowTouch/11_RainbowTouch.ino`
+
+It deliberately keeps all board-specific ST7796, Parallel8, touch-I2C, GPIO, and landscape-coordinate knowledge inside the BSP. Application code reads touch coordinates and draws through the BSP API.
+
+The rainbow trail uses a simple coordinate field:
+
+```text
+R = map(X, left -> right, 0 -> 255)
+G = map(Y, top -> bottom, 0 -> 255)
+B = map(X + Y, near -> far, 255 -> 0)
+```
+
+Observed BSP results:
+
+| Function | Result |
+|---|---|
+| Compile/upload | **PASS** |
+| BSP display initialization | **PASS** |
+| BSP touch initialization | **PASS** |
+| Finger tracking | **PASS** |
+| Persistent drawing trail | **PASS** |
+| Coordinate-dependent RGB565 color field | **PASS** |
+| LovyanGFX required by application | **NO** |
+| Application-level LCD/touch GPIO configuration required | **NO** |
+
+Video evidence — our BSP RainbowTouch:
+
+https://youtube.com/shorts/Rl50IJfhhrM
+
+The video shows upload and the real Panlee board running the rainbow touch-trail demonstration.
+
+## Comparison result
+
+The experiment now has physical evidence for both implementations on the same specimen:
+
+```text
+Sukesh/LovyanGFX touch draw       = PHYSICAL PASS
+WT32_SC01_PLUS BSP RainbowTouch   = PHYSICAL PASS
+```
+
+The purpose is not to claim that the upstream implementation is inferior. Studying a working third-party implementation provided an independent compatibility reference and inspired a reusable application-level demonstration that is now part of our BSP examples.
+
+## Release status
+
+`11_RainbowTouch` is included under `libraries/WT32_SC01_PLUS/examples/` and is intended to be packaged in the next Arduino library release ZIP.
 
 ## Claim boundary
 
-This evidence validates the named Panlee specimen and the tested software configuration. It does not certify every WT32-SC01-PLUS OEM revision, every LovyanGFX release, every Arduino ESP32 core version, or PSRAM configuration.
+These results validate the named Panlee specimen and tested software configuration only. They do not certify every WT32-SC01-PLUS OEM revision or every Arduino/LovyanGFX version.
