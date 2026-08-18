@@ -48,8 +48,16 @@ Empty directories are created only when material exists; the structure above is 
 - GPL projects may be modified and redistributed only under the applicable copyleft obligations.
 - If no explicit license is found, keep only links, metadata, observations, and independently written code. Do not mirror the upstream source or assets without permission.
 
-## First project
+## Project 1 — Arduino IDE / Sukesh minimal LovyanGFX
 
 The first comparison is the minimal Arduino IDE / LovyanGFX example by Sukesh Akhilesh versus this repository's own `WT32_SC01_PLUS` Arduino BSP.
 
 See [`arduino-ide/sukesh-minimal-lovyangfx/`](arduino-ide/sukesh-minimal-lovyangfx/).
+
+## Project 2 — PlatformIO / SubCoderHUN Smart Desk Companion
+
+The second target is a full application-level PlatformIO/LVGL project by SubCoderHUN: clock, weather, online radio, EEPROM settings, optional SD logging, and a SquareLine Studio UI.
+
+Upstream is Apache-2.0 licensed, so a properly attributed adaptation may be maintained after the upstream baseline is physically reproduced.
+
+See [`platformio/subcoderhun-smart-desk-companion/`](platformio/subcoderhun-smart-desk-companion/).
