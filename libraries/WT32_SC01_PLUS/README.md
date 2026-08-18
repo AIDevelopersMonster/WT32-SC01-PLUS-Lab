@@ -42,7 +42,7 @@ Real Wi-Fi credentials are never packaged: `examples/08_WiFiTest/wifi_secrets.h`
 
 ## Arduino examples
 
-The library contains the complete diagnostic set:
+The library contains the diagnostic set plus a compact interactive demonstration:
 
 ```text
 01_DisplayTest
@@ -55,15 +55,18 @@ The library contains the complete diagnostic set:
 08_WiFiTest
 09_BLETest
 10_TestConsole
+11_RainbowTouch
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
 
+`11_RainbowTouch` is intentionally different: it is a small application-level demonstration rather than a qualification test. It initializes the BSP display/backlight and touch subsystems, then lets the user paint by dragging a finger over the screen. The trail color is derived directly from the touch coordinates with three simple Arduino `map()` operations and packed into RGB565. No LovyanGFX configuration, LCD pin table, touch pin table, HSV conversion, palette, or lookup table is required in the sketch.
+
+Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
+
 Combined-console video evidence:
 
 [YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
-
-Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
 
 ## v0.1 status
 
@@ -83,6 +86,7 @@ Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-spec
 | BLE | **PHYSICAL PASS** | Scan + advertise + connect + GATT PING/PONG |
 | RS485 | PENDING | Dedicated test included; external peer validation pending |
 | Combined TestConsole | AVAILABLE | Modular CLI + touch-GUI launcher |
+| RainbowTouch demo | SOURCE ADDED / PHYSICAL RUN PENDING | Interactive BSP example; not yet promoted to physical pass |
 
 ## Validated LCD mapping
 
