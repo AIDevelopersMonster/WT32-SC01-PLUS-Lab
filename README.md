@@ -132,6 +132,45 @@ FULL PRODUCTION FIXTURE      OPEN
 
 This repository therefore already contains a complete worked example of practical reverse engineering: preserving the factory flash, reconstructing hidden control flow and peripheral tests, validating recovered functions on the physical board, and turning the findings into a repeatable diagnostic tool. Full native production-fixture emulation is intentionally deferred until the required external hardware is available.
 
+## Arduino BSP milestone
+
+A reusable Arduino library now lives in [`libraries/WT32_SC01_PLUS`](libraries/WT32_SC01_PLUS).
+
+The current Arduino example set is:
+
+```text
+01_DisplayTest
+02_TouchTest
+03_StorageTest
+04_SDDestructiveTest
+05_AudioTest
+06_RS485Test
+07_IOTest
+08_WiFiTest
+09_BLETest
+10_TestConsole
+```
+
+Physical functional validation on the reference specimen has been completed for display, touch, SD read/write, audio, external GPIO, Wi-Fi and BLE. `06_RS485Test` is included but remains pending until an external RS-485 peer is available.
+
+`10_TestConsole` provides a common modular operator interface: individual tests remain separate source modules while the console can launch them by number from Serial CLI or from the touch-screen GUI.
+
+Combined-test video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS Arduino 10_TestConsole](https://youtube.com/shorts/vCfhNmuI3KY)
+
+### Arduino library package
+
+The repository includes an automatic packaging workflow at [`.github/workflows/arduino-library-package.yml`](.github/workflows/arduino-library-package.yml).
+
+It builds an Arduino-installable archive from `libraries/WT32_SC01_PLUS`. Tagging a version as `arduino-v*` publishes the ZIP as a GitHub Release asset. The package intentionally excludes local `wifi_secrets.h` credentials.
+
+Install the release ZIP in Arduino IDE using:
+
+```text
+Sketch -> Include Library -> Add .ZIP Library...
+```
+
 ## Repository philosophy
 
 1. **Identify before assuming.** Every physical board gets a passport.
@@ -152,7 +191,8 @@ This repository therefore already contains a complete worked example of practica
 - [`docs/videos.md`](docs/videos.md) — project videos and YouTube Shorts.
 - [`tools/factory-test/README.md`](tools/factory-test/README.md) — recovered stock factory test and FactoryCTL.
 - [`evidence/specimens/panlee-v15-230208-sample-a/README.md`](evidence/specimens/panlee-v15-230208-sample-a/README.md) — specimen-specific acceptance evidence.
-- [`examples/README.md`](examples/README.md) — planned test sequence.
+- [`libraries/WT32_SC01_PLUS/README.md`](libraries/WT32_SC01_PLUS/README.md) — Arduino BSP status, examples and installation.
+- [`examples/README.md`](examples/README.md) — test-sequence notes.
 
 ## Structure
 
@@ -189,22 +229,24 @@ WT32-SC01-PLUS-Lab/
 |---|---|---|
 | HW-00 | Photograph and identify the specimen | IN PROGRESS |
 | HW-01 | Chip / flash / PSRAM / factory backup | **PASS** |
-| HW-02 | Display bus and controller | **PASS — factory-fw/JTAG verified** |
-| HW-03 | Touch controller and coordinates | **PASS — 44-target factory test physically verified** |
-| HW-04 | Backlight / buttons / onboard I/O | IN PROGRESS |
-| HW-05 | Storage | PARTIAL — factory path recovered, independent full file-cycle certification open |
-| HW-06 | Audio | **PASS — factory-fw/JTAG verified** |
-| HW-07 | Wi-Fi / BLE | TODO |
-| HW-08 | Expansion connectors / exposed GPIO | TODO |
-| HW-09 | Integrated LVGL/UI stress test | TODO |
+| HW-02 | Display bus and controller | **PASS — factory-fw/JTAG + Arduino verified** |
+| HW-03 | Touch controller and coordinates | **PASS — factory 44-target + Arduino five-point verified** |
+| HW-04 | Backlight / buttons / onboard I/O | **PARTIAL — backlight PASS; button coverage not closed** |
+| HW-05 | Storage | **PASS — Arduino SDSPI read + full-media write/verify + FAT restore** |
+| HW-06 | Audio | **PASS — factory-fw/JTAG + Arduino I2S verified** |
+| HW-07 | Wi-Fi / BLE | **PASS — Arduino scan + Wi-Fi infrastructure + BLE GATT verified** |
+| HW-08 | Expansion connectors / exposed GPIO / RS485 | **PARTIAL — six GPIO inputs PASS; RS485 peer test PENDING** |
+| HW-09 | Integrated diagnostic UI / coexistence | **PARTIAL — modular Arduino 10_TestConsole implemented and physically exercised; dedicated LVGL/stress qualification remains open** |
 
 ## Important
 
 The repository remains conservative about cross-board defaults. Pin assignments, controller identity and peripheral behavior verified on the **Panlee ZX3D50CE08S-V15-USRC 230208** specimen must not be generalized automatically to every WT32-SC01-PLUS/OEM revision.
 
-For the reference specimen, HW-02 and HW-03 are now physically verified through the original factory firmware plus JTAG-controlled execution. The display path initializes and produces the recovered interactive visual test, while the touch stage completes all 44 target regions and returns to the recovered runner boundary.
+For the reference specimen, display and touch are now verified through both the recovered factory workflow and independent Arduino diagnostics. Storage has progressed beyond the recovered factory path to independent Arduino read validation and a complete destructive full-media write/verify qualification on a separate card, followed by FAT restoration.
 
-HW-06 is also physically verified through the original factory firmware: the recovered audio task consumes the embedded MP3 and produces audible speaker output on the reference specimen.
+Audio is physically verified through both the recovered factory firmware path and the Arduino I2S test. External GPIO10/11/12/13/14/21, Wi-Fi and BLE have also completed independent Arduino functional validation.
+
+RS-485 remains the principal unclosed external-interface item: the pin mapping and factory configuration are recovered and an Arduino peer-test sketch is present, but end-to-end physical acceptance awaits an external RS-485 adapter/peer.
 
 ## License
 
