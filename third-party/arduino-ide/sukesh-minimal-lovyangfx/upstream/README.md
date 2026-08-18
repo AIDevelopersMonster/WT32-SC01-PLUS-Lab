@@ -20,6 +20,30 @@ Observed upstream characteristics:
 - Last active: 2026-06-10
 - 16 stars / 2 forks at the checked snapshot
 
+## Physical validation on our specimen
+
+The original sketch was compiled and uploaded on 2026-08-18 to:
+
+```text
+Panlee WT32-SC01-PLUS
+ZX3D50CE08S-V15-USRC / 230208
+```
+
+Result:
+
+- Arduino compile: **PASS**
+- upload: **PASS**
+- ST7796 display: **PHYSICAL PASS**
+- touch coordinates: **PHYSICAL PASS**
+- touch drawing: **PHYSICAL PASS**
+- LovyanGFX dependency: **PHYSICALLY VALIDATED with this sketch/specimen**
+
+Video evidence:
+
+https://youtube.com/shorts/5CkP_Jh4ofo
+
+Detailed record: [`../evidence/README.md`](../evidence/README.md)
+
 ## Redistribution note
 
 No explicit license was identified on the Gist page during the 2026-08-18 review. The upstream `.ino` file is therefore intentionally not mirrored in this repository.
