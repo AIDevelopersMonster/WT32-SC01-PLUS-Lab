@@ -6,10 +6,13 @@ void setup() {
   Serial.begin(115200);
 
   if (!board.begin()) {
-    Serial.println("WT32-SC01-PLUS init failed");
-    while (true) {
-      delay(1000);
-    }
+    Serial.println("WT32-SC01-PLUS display/backlight init failed");
+    while (true) delay(1000);
+  }
+
+  if (!board.touch().begin()) {
+    Serial.println("WT32-SC01-PLUS touch init failed");
+    while (true) delay(1000);
   }
 
   board.printBoardInfo(Serial);
