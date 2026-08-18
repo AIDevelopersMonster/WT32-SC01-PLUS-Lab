@@ -1,24 +1,79 @@
 # Our version
 
-This directory contains an independently written comparison implementation using the board-specific Arduino BSP already maintained in this repository.
+This directory contains independently written comparison implementations using the board-specific Arduino BSP already maintained in this repository.
 
-It does not copy the upstream Gist source.
+They do not copy the upstream Gist source.
 
 ## Arduino IDE
 
-Install the local `WT32_SC01_PLUS` library (or its generated ZIP release), then open:
-
-```text
-WT32_SC01_PLUS_Minimal/WT32_SC01_PLUS_Minimal.ino
-```
-
-Select:
+Install the local `WT32_SC01_PLUS` library (or its generated ZIP release), then open one of the examples below and select:
 
 ```text
 ESP32S3 Dev Module
 ```
 
-The application intentionally contains no ST7796 bus pin table, LovyanGFX panel class, backlight PWM configuration, or FT5x06 I2C configuration. Those board details belong to the reusable BSP.
+## Minimal comparison
+
+```text
+WT32_SC01_PLUS_Minimal/WT32_SC01_PLUS_Minimal.ino
+```
+
+This is the smallest board-level comparison. It initializes the validated BSP, displays a test pattern, reads touch coordinates, and draws simple markers.
+
+## Rainbow Touch Draw
+
+```text
+WT32_SC01_PLUS_RainbowTouch/WT32_SC01_PLUS_RainbowTouch.ino
+```
+
+This is the direct visual analogue of the upstream touch-drawing demo, but it uses only the `WT32_SC01_PLUS` BSP API at application level.
+
+The user can drag a finger over the display and leave a colored trail. The color is deliberately computed without HSV conversion, palettes, or lookup tables. A simple RGB field is stretched across the touchscreen using Arduino `map()`:
+
+```text
+R = map(X,       left  -> right, 0   -> 255)
+G = map(Y,       top   -> bottom, 0  -> 255)
+B = map(X + Y,   near  -> far,   255 -> 0)
+```
+
+The three 8-bit components are then packed directly into RGB565 for the ST7796 display.
+
+This produces a continuous position-dependent rainbow-like color field while keeping the sketch easy to explain on camera.
+
+The brush is a small filled square drawn with `board.display().fillRect()`. Coordinate clipping at screen edges is handled by the BSP display implementation.
+
+## Why this is useful for the comparison
+
+The application intentionally contains no:
+
+- ST7796 initialization sequence;
+- 8-bit I80 GPIO table;
+- LovyanGFX panel or bus classes;
+- backlight pin/PWM configuration;
+- FT5x06/FT6336U I2C pin mapping;
+- landscape touch-coordinate transform.
+
+Those board-specific details are already encapsulated in `WT32_SC01_PLUS`.
+
+At application level the essential loop becomes conceptually:
+
+```cpp
+WT32_SC01_PLUS_TouchPoint point;
+
+if (board.touch().read(point) && point.touched) {
+    uint16_t color = colorFromTouch(point.x, point.y);
+    board.display().fillRect(point.x - 4, point.y - 4, 9, 9, color);
+}
+```
+
+That makes this example suitable for a side-by-side video comparison with the original Sukesh LovyanGFX sketch: similar visible behavior, but board configuration is no longer repeated in the application.
+
+## Validation status
+
+- Upstream Sukesh/LovyanGFX touch-drawing example: **PHYSICAL PASS** on the reference Panlee specimen.
+- `WT32_SC01_PLUS_RainbowTouch`: source added; **physical run still pending**.
+
+Do not promote the rainbow example to PHYSICAL PASS until it has been compiled, flashed, and observed on the same board.
 
 ## What this comparison proves — and what it does not
 
