@@ -70,10 +70,25 @@ That makes this example suitable for a side-by-side video comparison with the or
 
 ## Validation status
 
-- Upstream Sukesh/LovyanGFX touch-drawing example: **PHYSICAL PASS** on the reference Panlee specimen.
-- `WT32_SC01_PLUS_RainbowTouch`: source added; **physical run still pending**.
+Both sides of the comparison have now been physically executed on the same reference Panlee specimen:
 
-Do not promote the rainbow example to PHYSICAL PASS until it has been compiled, flashed, and observed on the same board.
+- Upstream Sukesh/LovyanGFX touch-drawing example: **PHYSICAL PASS**.
+- `WT32_SC01_PLUS_RainbowTouch`: **PHYSICAL PASS**.
+
+Observed for the BSP version on 2026-08-18:
+
+- sketch compiled and uploaded successfully;
+- display initialized correctly;
+- touch input worked across the screen;
+- finger motion produced a persistent trail;
+- RGB565 trail color changed continuously with touch position according to the simple `map()` field;
+- no LovyanGFX dependency or application-level LCD/touch pin configuration was required.
+
+The reusable library example is also available as:
+
+```text
+libraries/WT32_SC01_PLUS/examples/11_RainbowTouch/11_RainbowTouch.ino
+```
 
 ## What this comparison proves — and what it does not
 
