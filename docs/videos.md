@@ -4,8 +4,10 @@ This page collects practical videos produced during the physical investigation a
 
 The videos are demonstrations of specific experiments. Hardware conclusions remain tied to the documented specimen and acceptance evidence in this repository.
 
-## Arduino / audio
+## Arduino / library / audio
 
+- [WT32-SC01-PLUS: выпускаем Arduino-библиотеку через GitHub Release — установка ZIP в Arduino IDE](https://youtube.com/shorts/Q7T5lUkcmmo)
+- [WT32-SC01-PLUS: общий Arduino 10_TestConsole — все основные тесты в одной программе](https://youtube.com/shorts/vCfhNmuI3KY)
 - [WT32-SC01-PLUS: мощный тест встроенного звука ESP32-S3 — I2S 100% без перезагрузок](https://youtube.com/shorts/l_N1KvKkuLc)
 - [WT32-SC01-PLUS: создаём свою Arduino-библиотеку для ESP32-S3 с нуля](https://youtube.com/shorts/97epwdNGdbs)
 
