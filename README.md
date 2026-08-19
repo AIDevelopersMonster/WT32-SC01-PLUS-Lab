@@ -4,6 +4,16 @@ Practical hardware/software laboratory for the **WT32-SC01-PLUS** family of ESP3
 
 This repository follows the successful organization of [`esp32-2432s028-lab`](https://github.com/AIDevelopersMonster/esp32-2432s028-lab), but adds stricter separation between **claims**, **board variants**, and **measured evidence**.
 
+## Browser Web Flasher
+
+**[Open the WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)**
+
+The lab test firmware can now be flashed directly from a desktop Chromium-based browser with **ESP Web Tools**. No Arduino IDE, PlatformIO or local esptool setup is required for this path. The page also includes a 115200-baud Web Serial monitor for reading test output and saving logs.
+
+The Web Flasher targets the physically validated reference specimen **Panlee / ZX3D50CE08S-V15-USRC / 230208**. Other WT32-SC01-PLUS/OEM revisions may differ electrically and should be identified before flashing.
+
+The one-click catalog intentionally excludes the destructive full-card SD qualification test.
+
 ## Have a WT32-SC01-PLUS? Report your board
 
 We are building a map of real WT32-SC01-PLUS hardware variants rather than assuming that every board sold under the same name is identical.
@@ -12,6 +22,7 @@ We are building a map of real WT32-SC01-PLUS hardware variants rather than assum
 
 Start here:
 
+- **[Browser Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)** — flash validated lab test firmware directly from Chrome/Edge on the reference Panlee board.
 - [`docs/VISITOR-HARDWARE-VALIDATION.md`](docs/VISITOR-HARDWARE-VALIDATION.md) — step-by-step visitor guide.
 - [`tools/windows/wt32-sc01-plus-audit.ps1`](tools/windows/wt32-sc01-plus-audit.ps1) — read-only Windows host/USB audit with optional chip/flash identification.
 - [`docs/software/README.md`](docs/software/README.md) — software tools: what each tool is for and where to download it.
@@ -155,6 +166,12 @@ Physical functional validation on the reference specimen has been completed for 
 
 `10_TestConsole` provides a common modular operator interface: individual tests remain separate source modules while the console can launch them by number from Serial CLI or from the touch-screen GUI.
 
+### Browser-based test flashing
+
+The non-destructive Arduino BSP validation set is also published through the **[WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)**. Connect the reference board by USB, choose a test, install it from Chrome/Edge, then read its 115200-baud output in the built-in Web Serial monitor.
+
+`04_SDDestructiveTest` is deliberately not exposed as a one-click browser target because it performs full-card destructive writes.
+
 Combined-test video evidence:
 
 - [YouTube Shorts — WT32-SC01-PLUS Arduino 10_TestConsole](https://youtube.com/shorts/vCfhNmuI3KY)
@@ -181,6 +198,7 @@ Sketch -> Include Library -> Add .ZIP Library...
 
 ## Start here
 
+- **[WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)** — browser-based installation of the validated non-destructive test firmware on the reference Panlee specimen.
 - [`docs/HARDWARE-ACCEPTANCE-START.md`](docs/HARDWARE-ACCEPTANCE-START.md) — acceptance workflow.
 - [`docs/VISITOR-HARDWARE-VALIDATION.md`](docs/VISITOR-HARDWARE-VALIDATION.md) — how visitors can report their own board.
 - [`docs/board-passports/README.md`](docs/board-passports/README.md) — how to register a specimen.
