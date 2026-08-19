@@ -2,6 +2,16 @@
 
 Reference specimen: **Panlee / ZX3D50CE08S-V15-USRC / 230208**.
 
+## Fast path: browser test firmware
+
+For the physically validated Panlee reference specimen, the non-destructive Arduino BSP tests can be installed directly from a desktop Chrome/Edge browser:
+
+**[Open the WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)**
+
+The page uses ESP Web Tools to flash the selected test and includes a 115200-baud Web Serial monitor for observing test output and saving logs. No Arduino IDE, PlatformIO or local esptool installation is required for this path.
+
+The browser flasher is intentionally specimen-specific. Do not assume that another WT32-SC01-PLUS/OEM revision uses the same pinout or peripherals. The destructive full-card SD qualification firmware is not exposed through the one-click flasher.
+
 ## Rule
 
 The lab distinguishes three levels:
