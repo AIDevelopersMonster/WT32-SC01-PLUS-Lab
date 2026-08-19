@@ -4,6 +4,12 @@ End-user demonstration for the validated **Panlee WT32-SC01-PLUS / ZX3D50CE08S-V
 
 Status: **SOURCE + CI INTEGRATION / PHYSICAL VALIDATION PENDING**.
 
+## Video demonstration
+
+[YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
+
+The video shows the real Panlee reference specimen running the RetroClock application, including the on-device Wi-Fi setup instructions and the final NTP-synchronized seven-segment clock display.
+
 This example is deliberately different from the qualification tests. It demonstrates a complete no-IDE user path:
 
 ```text
