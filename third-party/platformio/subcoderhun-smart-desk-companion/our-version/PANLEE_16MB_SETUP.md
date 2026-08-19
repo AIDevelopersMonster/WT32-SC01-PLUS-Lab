@@ -148,7 +148,9 @@ Get-ChildItem .\src\Managers\TimeManager -Recurse -File |
     Select-String -Pattern "configTime|configTzTime|gmt|offset|daylight|3600|7200|10800"
 ```
 
-For Moscow the intended civil-time configuration is UTC+3 with no daylight-saving offset. Keep timezone configuration independent from weather location.
+Audit of the upstream implementation found a Central European UTC+1/UTC+2 seasonal calculation. Copy [`source-overrides/src/Managers/TimeManager/time_manager.cpp`](source-overrides/src/Managers/TimeManager/time_manager.cpp) over `src/Managers/TimeManager/time_manager.cpp` in the Panlee source project. It sets a fixed `10800`-second GMT offset, DST `0`, and removes the seasonal calculation. Keep timezone configuration independent from weather location.
+
+After rebuilding and uploading, compare the displayed date and time with a trusted Moscow clock after NTP synchronization. Do not mark the timezone `PHYSICAL PASS` until that check succeeds.
 
 ## 11. Memory
 

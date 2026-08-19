@@ -27,7 +27,7 @@ The video physically demonstrates the named Panlee board running the adapted 16 
 | Weather / Moscow | PHYSICAL PASS |
 | Online radio / I2S | PHYSICAL PASS |
 | 16 MB build profile | PASS |
-| Moscow timezone | NEEDS REVIEW (approximately 1 hour offset) |
+| Moscow timezone | CODE FIX PREPARED — PHYSICAL RECHECK REQUIRED |
 | PSRAM runtime usage | NOT YET VERIFIED |
 
 `-DBOARD_HAS_PSRAM` is a build definition, not evidence that this application used PSRAM at runtime.
@@ -67,16 +67,18 @@ Check the LVGL/SquareLine dropdown options, city-index mapping in application lo
 
 A future refactor should use one location record containing city name, latitude, longitude, timezone, and country code. Prefer latitude/longitude for Weather API requests.
 
-## Moscow timezone: open issue
+## Moscow timezone: audited fix
 
-Weather for Moscow physically works, but the clock is approximately one hour behind. This is not fixed or passed. Inspect the current implementation before changing it:
+Weather for Moscow physically works. Audit of upstream snapshot `df8c3f2` found a Central European UTC+1/UTC+2 seasonal calculation in `src/Managers/TimeManager/time_manager.cpp`. The corrected drop-in file is [`source-overrides/src/Managers/TimeManager/time_manager.cpp`](source-overrides/src/Managers/TimeManager/time_manager.cpp): fixed UTC+3 (`10800` seconds), DST `0`, and no seasonal offset function.
+
+Copy it over the same relative path in the maintained Panlee source tree, rebuild, upload, and verify the displayed time against a trusted Moscow clock. Until that physical run, the timezone is not a physical PASS. The audit command remains:
 
 ```powershell
 Get-ChildItem .\src\Managers\TimeManager -Recurse -File |
   Select-String -Pattern "configTime|configTzTime|gmt|offset|daylight|3600|7200|10800"
 ```
 
-The target is Moscow `UTC+3` with DST `0`.
+The target is Moscow `UTC+3` with DST `0`; the prepared source override implements exactly that.
 
 ## Radio stations and EEPROM
 

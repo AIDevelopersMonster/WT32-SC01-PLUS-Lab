@@ -40,7 +40,7 @@ The recording shows the named Panlee specimen running the adapted 16 MB build an
 | WEATHER / MOSCOW | PHYSICAL PASS | OpenWeatherMap result shown; secret not published |
 | ONLINE RADIO / I2S | PHYSICAL PASS | Playback demonstrated through I2S |
 | 16 MB BUILD PROFILE | PASS | Explicit 16 MB profile and successful build |
-| MOSCOW TIMEZONE | NEEDS REVIEW | Clock approximately 1 hour behind; not fixed |
+| MOSCOW TIMEZONE | CODE FIX PREPARED | UTC+3/DST=0 source override audited; physical recheck required |
 | PSRAM RUNTIME USE | NOT YET VERIFIED | `BOARD_HAS_PSRAM` alone is not runtime evidence |
 
 Recorded successful resource summary:
@@ -53,4 +53,4 @@ Flash: 44.0% (2885925 / 6553600)
 
 ## Claim discipline
 
-The video does not establish EEPROM persistence, SD logging, corrected Moscow time, or PSRAM allocation/use by the running application. Those remain separate tests.
+The video does not establish EEPROM persistence, SD logging, corrected Moscow time, or PSRAM allocation/use by the running application. The timezone source override is prepared but remains unverified on hardware; those remain separate tests.
