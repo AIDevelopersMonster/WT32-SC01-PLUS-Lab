@@ -61,6 +61,12 @@
       "sketch": "10_TestConsole",
       "label": "Full Test Console",
       "description": "Loads the interactive consolidated test console for manual board validation after the individual hardware paths are known-good."
+    },
+    {
+      "id": "retro-clock",
+      "sketch": "12_RetroClock",
+      "label": "Retro Clock + Web Setup",
+      "description": "End-user demo: first-boot setup AP and captive portal, home Wi-Fi provisioning, city/timezone selection, NTP synchronization, local setup page, and a large seven-segment clock with date."
     }
   ]
 }
