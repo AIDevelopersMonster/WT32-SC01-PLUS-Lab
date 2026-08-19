@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "board": {
+    "id": "panlee-zx3d50ce08s-v15-usrc",
+    "name": "Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC",
+    "chipFamily": "ESP32-S3",
+    "flash": "16 MB",
+    "psram": "2 MB QSPI"
+  },
+  "tests": [
+    {
+      "id": "display",
+      "sketch": "01_DisplayTest",
+      "label": "Display Test",
+      "description": "Validates the ST7796 parallel display path, orientation, colors, backlight and basic drawing on the physically verified Panlee pin map."
+    },
+    {
+      "id": "touch",
+      "sketch": "02_TouchTest",
+      "label": "Touch Test",
+      "description": "Validates the FT6336-family touch controller on I2C address 0x38 and reports touch coordinates through the test firmware."
+    },
+    {
+      "id": "storage",
+      "sketch": "03_StorageTest",
+      "label": "SD Storage Test",
+      "description": "Runs the normal microSD detection/read-write validation. The separate destructive full-card stress test is intentionally not offered here."
+    },
+    {
+      "id": "audio",
+      "sketch": "05_AudioTest",
+      "label": "Audio Test",
+      "description": "Exercises the validated I2S audio path using LRCK GPIO35, BCLK GPIO36 and DOUT GPIO37."
+    },
+    {
+      "id": "rs485",
+      "sketch": "06_RS485Test",
+      "label": "RS485 Test",
+      "description": "Exercises the factory-recovered RS485 UART mapping: TX GPIO42, RX GPIO1 and direction/RTS GPIO2 at 115200 baud."
+    },
+    {
+      "id": "io",
+      "sketch": "07_IOTest",
+      "label": "External GPIO Test",
+      "description": "Exercises the externally validated GPIO set used by the lab board acceptance work."
+    },
+    {
+      "id": "wifi",
+      "sketch": "08_WiFiTest",
+      "label": "Wi-Fi Test",
+      "description": "Runs the Arduino BSP Wi-Fi validation firmware and reports scan/connectivity information over serial."
+    },
+    {
+      "id": "ble",
+      "sketch": "09_BLETest",
+      "label": "BLE Test",
+      "description": "Runs the Bluetooth Low Energy validation firmware for the ESP32-S3 radio path."
+    },
+    {
+      "id": "console",
+      "sketch": "10_TestConsole",
+      "label": "Full Test Console",
+      "description": "Loads the interactive consolidated test console for manual board validation after the individual hardware paths are known-good."
+    }
+  ]
+}
