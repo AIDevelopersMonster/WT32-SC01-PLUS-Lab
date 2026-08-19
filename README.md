@@ -14,6 +14,13 @@ The Web Flasher targets the physically validated reference specimen **Panlee / Z
 
 The one-click catalog intentionally excludes the destructive full-card SD qualification test.
 
+### Retro Clock application
+
+The Web Flasher also publishes the `12_RetroClock` application: first boot creates a setup Wi-Fi AP, the LCD shows SSID/password/`192.168.4.1`, browser setup collects home Wi-Fi and city/timezone settings, and the board then synchronizes time over NTP and displays a seven-segment clock with date.
+
+- [YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
+- [`12_RetroClock` documentation](libraries/WT32_SC01_PLUS/examples/12_RetroClock/README.md)
+
 ## Have a WT32-SC01-PLUS? Report your board
 
 We are building a map of real WT32-SC01-PLUS hardware variants rather than assuming that every board sold under the same name is identical.
@@ -160,21 +167,26 @@ The current Arduino example set is:
 08_WiFiTest
 09_BLETest
 10_TestConsole
+11_RainbowTouch
+12_RetroClock
 ```
 
 Physical functional validation on the reference specimen has been completed for display, touch, SD read/write, audio, external GPIO, Wi-Fi and BLE. `06_RS485Test` is included but remains pending until an external RS-485 peer is available.
 
 `10_TestConsole` provides a common modular operator interface: individual tests remain separate source modules while the console can launch them by number from Serial CLI or from the touch-screen GUI.
 
+`12_RetroClock` is an application-level demonstration of the browser-first user path: Web Flasher -> setup AP -> browser Wi-Fi/timezone configuration -> NTP -> retro seven-segment clock.
+
 ### Browser-based test flashing
 
-The non-destructive Arduino BSP validation set is also published through the **[WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)**. Connect the reference board by USB, choose a test, install it from Chrome/Edge, then read its 115200-baud output in the built-in Web Serial monitor.
+The non-destructive Arduino BSP validation set and application demos are published through the **[WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)**. Connect the reference board by USB, choose a firmware target, install it from Chrome/Edge, then read its 115200-baud output in the built-in Web Serial monitor when needed.
 
 `04_SDDestructiveTest` is deliberately not exposed as a one-click browser target because it performs full-card destructive writes.
 
-Combined-test video evidence:
+Video evidence:
 
 - [YouTube Shorts — WT32-SC01-PLUS Arduino 10_TestConsole](https://youtube.com/shorts/vCfhNmuI3KY)
+- [YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
 
 ### Arduino library package
 
