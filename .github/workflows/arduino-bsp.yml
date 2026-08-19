@@ -1,10 +1,7 @@
 name: Arduino BSP CI
 
 on:
-  pull_request:
-    paths:
-      - 'libraries/WT32_SC01_PLUS/**'
-      - '.github/workflows/arduino-bsp.yml'
+  workflow_call:
 
 jobs:
   examples:
