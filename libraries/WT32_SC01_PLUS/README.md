@@ -42,7 +42,7 @@ Real Wi-Fi credentials are never packaged: `examples/08_WiFiTest/wifi_secrets.h`
 
 ## Arduino examples
 
-The library contains the diagnostic set plus a compact interactive demonstration:
+The library contains the diagnostic set plus compact application-level demonstrations:
 
 ```text
 01_DisplayTest
@@ -56,17 +56,21 @@ The library contains the diagnostic set plus a compact interactive demonstration
 09_BLETest
 10_TestConsole
 11_RainbowTouch
+12_RetroClock
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
 
 `11_RainbowTouch` is intentionally different: it is a small application-level demonstration rather than a qualification test. It initializes the BSP display/backlight and touch subsystems, then lets the user paint by dragging a finger over the screen. The trail color is derived directly from the touch coordinates with three simple Arduino `map()` operations and packed into RGB565. No LovyanGFX configuration, LCD pin table, touch pin table, HSV conversion, palette, or lookup table is required in the sketch.
 
+`12_RetroClock` demonstrates a complete no-IDE product path: install from the browser Web Flasher, configure the board through its temporary Wi-Fi AP and local web page, select city/timezone, synchronize from NTP, and run a seven-segment clock with date. See [`examples/12_RetroClock/README.md`](examples/12_RetroClock/README.md).
+
 Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
 
-Combined-console video evidence:
+### Video evidence
 
-[YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
+- [YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
+- [YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
 
 ## v0.1 status
 
@@ -87,6 +91,7 @@ Combined-console video evidence:
 | RS485 | PENDING | Dedicated test included; external peer validation pending |
 | Combined TestConsole | AVAILABLE | Modular CLI + touch-GUI launcher |
 | RainbowTouch demo | **PHYSICAL PASS** | Interactive BSP demo: touch painting and coordinate-mapped RGB565 trail physically observed on Panlee V15 / 230208 |
+| RetroClock demo | **PHYSICAL DEMONSTRATION AVAILABLE** | Web AP setup, Wi-Fi/NTP clock and seven-segment display shown on the reference specimen; full checklist remains separately tracked |
 
 ## RainbowTouch physical demonstration
 
