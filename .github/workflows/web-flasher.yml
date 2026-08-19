@@ -64,13 +64,13 @@ jobs:
           done < /tmp/web-tests.txt
 
       - name: Package ESP Web Tools site
-        run: python3 tools/prepare_web_flasher.py
+        run: python3 tools/prepare_web_flasher.py --output web-site
 
       - name: Upload Web Flasher validation artifact
         uses: actions/upload-artifact@v4
         with:
           name: wt32-sc01-plus-web-flasher
-          path: .web-site
+          path: web-site
           if-no-files-found: error
 
       - name: Configure GitHub Pages
@@ -81,7 +81,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .web-site
+          path: web-site
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
