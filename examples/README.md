@@ -1,6 +1,16 @@
 # Examples
 
-Hardware-validation progression for the reference WT32-SC01-PLUS specimen:
+Hardware-validation progression for the reference WT32-SC01-PLUS specimen.
+
+## Browser flashing for validated tests
+
+For the physically validated **Panlee / ZX3D50CE08S-V15-USRC / 230208** specimen, use the browser flasher for the published non-destructive Arduino BSP tests:
+
+**[Open the WT32-SC01-PLUS Lab Web Flasher](https://aidevelopersmonster.github.io/WT32-SC01-PLUS-Lab/)**
+
+The Web Flasher uses ESP Web Tools and includes a 115200-baud Web Serial monitor. It is the quickest path for repeating the lab tests without installing Arduino IDE, PlatformIO or esptool locally.
+
+The destructive full-card SD qualification firmware is deliberately excluded from one-click browser flashing. Other OEM/revision boards should be identified before using the Panlee-specific firmware.
 
 | Directory | Purpose | Status |
 |---|---|---|
