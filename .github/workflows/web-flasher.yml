@@ -1,0 +1,96 @@
+name: Web Flasher
+
+on:
+  pull_request:
+    paths:
+      - 'libraries/WT32_SC01_PLUS/**'
+      - 'web-flasher/**'
+      - 'tools/prepare_web_flasher.py'
+      - '.github/workflows/web-flasher.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'libraries/WT32_SC01_PLUS/**'
+      - 'web-flasher/**'
+      - 'tools/prepare_web_flasher.py'
+      - '.github/workflows/web-flasher.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: web-flasher-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP32 Arduino core
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32@3.3.8 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+
+      - name: Build Web Flasher test firmware
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/web-tests.txt
+          import json
+          with open('web-flasher/tests.json', encoding='utf-8') as f:
+              catalog = json.load(f)
+          for test in catalog['tests']:
+              print(f"{test['id']}|{test['sketch']}")
+          PY
+
+          while IFS='|' read -r test_id sketch; do
+            echo "=== Building ${test_id}: ${sketch} ==="
+            mkdir -p ".web-build/${test_id}"
+            arduino-cli compile \
+              --fqbn esp32:esp32:esp32s3 \
+              --library libraries/WT32_SC01_PLUS \
+              --output-dir ".web-build/${test_id}" \
+              "libraries/WT32_SC01_PLUS/examples/${sketch}"
+          done < /tmp/web-tests.txt
+
+      - name: Package ESP Web Tools site
+        run: python3 tools/prepare_web_flasher.py
+
+      - name: Upload Web Flasher validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wt32-sc01-plus-web-flasher
+          path: .web-site
+          if-no-files-found: error
+
+      - name: Configure GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .web-site
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
