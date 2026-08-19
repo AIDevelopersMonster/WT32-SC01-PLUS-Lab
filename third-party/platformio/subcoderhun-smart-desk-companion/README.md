@@ -1,5 +1,12 @@
 # SubCoderHUN WT32-SC01 PLUS Smart Desk Companion
 
+Quick links:
+
+- [Upstream project record](upstream/README.md)
+- [Panlee adaptation](our-version/README.md)
+- [Physical demo](https://youtube.com/shorts/4kxUpJS4kCk)
+- [Evidence matrix](evidence/README.md)
+
 ## Why this project
 
 This is the second third-party validation target in the WT32-SC01-PLUS-Lab ecosystem and the first full application-level PlatformIO/LVGL project.
@@ -71,7 +78,7 @@ SD D0/MISO   GPIO38
 
 That makes the project a strong cross-implementation validation candidate for the Panlee `ZX3D50CE08S-V15-USRC / 230208` specimen.
 
-Compatibility is **not yet claimed** until the upstream project is built and physically executed unchanged or with only explicitly documented environment fixes.
+The Panlee adaptation is now physically validated for the explicitly recorded display, touch, UI, brightness, Wi-Fi, Moscow weather, and online-radio/I2S paths. This does not certify untested OEM revisions or subsystems not listed as passed.
 
 ## Important configuration differences
 
@@ -133,13 +140,17 @@ Potential changes for `our-version/` include:
 | Apache-2.0 license confirmed | YES |
 | Snapshot commit recorded | YES |
 | Pin mapping compared with Panlee specimen | HIGH MATCH |
-| Upstream PlatformIO build on our workstation | PENDING |
-| Upstream physical UI run on our Panlee | PENDING |
-| Network/weather validation | PENDING |
-| SD validation in upstream app | PENDING |
-| Radio/audio validation in upstream app | PENDING |
-| Our adaptation | NOT STARTED |
-| Video evidence | PENDING |
+| PlatformIO build | PASS |
+| Upload | PASS |
+| Boot | PHYSICAL PASS |
+| ST7796 / LVGL | PHYSICAL PASS |
+| Touch / UI navigation / brightness | PHYSICAL PASS |
+| Wi-Fi / Weather for Moscow | PHYSICAL PASS |
+| Online radio / I2S | PHYSICAL PASS |
+| 16 MB build profile | PASS |
+| Moscow timezone | NEEDS REVIEW (approximately 1 hour offset) |
+| PSRAM runtime usage | NOT YET VERIFIED |
+| Video evidence | [PHYSICAL DEMO](https://youtube.com/shorts/4kxUpJS4kCk) |
 
 ## Directory layout
 

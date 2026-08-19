@@ -52,3 +52,14 @@ Modified for Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC.
 Do not assume every font, icon, image, weather asset, or 3D file is automatically covered by the top-level Apache-2.0 license. Preserve provenance and review third-party asset notices before commercial redistribution.
 
 This file is an engineering license inventory, not legal advice.
+
+## License files checked
+
+The following upstream license files were checked before this inventory was updated:
+
+- SubCoderHUN/WT32-SC01-PLUS `LICENSE` at `df8c3f251ee2d9fe8ab0961343251661d1c10e40` — Apache-2.0;
+- LVGL `LICENCE.txt` at `v8.3.6` — MIT;
+- LovyanGFX `license.txt` at `1.1.7` — bundled MIT/BSD-family and component-specific notices;
+- ESP32-audioI2S upstream `LICENSE` — GPL-3.0.
+
+Recheck the exact vendored snapshots and all asset notices before a release. This inventory is not legal advice.
