@@ -34,10 +34,10 @@ uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 const uint16_t C_CYAN = rgb565(70, 220, 255);
-const uint16_t C_BLUE = rgb565(35, 90, 220);
 const uint16_t C_GREEN = rgb565(70, 235, 120);
 const uint16_t C_AMBER = rgb565(255, 135, 15);
 const uint16_t C_AMBER_DIM = rgb565(42, 17, 2);
+const uint16_t C_SECOND_DIM = rgb565(2, 22, 28);
 const uint16_t C_RED = rgb565(255, 70, 70);
 const uint16_t C_MUTED = rgb565(105, 120, 135);
 
@@ -128,7 +128,36 @@ uint32_t connectStartedMs = 0;
 uint32_t apStopAtMs = 0;
 uint32_t lastClockRefreshMs = 0;
 uint32_t lastReconnectMs = 0;
-int lastRenderedSecond = -1;
+
+struct ClockRenderCache {
+  bool frameDrawn = false;
+  time_t epochSecond = 0;
+  int hourTens = -1;
+  int hourOnes = -1;
+  int minuteTens = -1;
+  int minuteOnes = -1;
+  int secondTens = -1;
+  int secondOnes = -1;
+  int colonPhase = -1;
+  int dateKey = -1;
+  String networkKey;
+};
+
+ClockRenderCache clockCache;
+
+void invalidateClockRender() {
+  clockCache.frameDrawn = false;
+  clockCache.epochSecond = 0;
+  clockCache.hourTens = -1;
+  clockCache.hourOnes = -1;
+  clockCache.minuteTens = -1;
+  clockCache.minuteOnes = -1;
+  clockCache.secondTens = -1;
+  clockCache.secondOnes = -1;
+  clockCache.colonPhase = -1;
+  clockCache.dateKey = -1;
+  clockCache.networkKey = "";
+}
 
 const Glyph *findGlyph(char c) {
   if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
@@ -169,11 +198,6 @@ void drawCenteredText(const String &text, int y, int scale, uint16_t color) {
   drawText(text, x, y, scale, color);
 }
 
-String upperForDisplay(String value) {
-  value.toUpperCase();
-  return value;
-}
-
 String htmlEscape(const String &input) {
   String out;
   out.reserve(input.length() + 16);
@@ -183,7 +207,6 @@ String htmlEscape(const String &input) {
     else if (c == '<') out += F("&lt;");
     else if (c == '>') out += F("&gt;");
     else if (c == '"') out += F("&quot;");
-    else if (c == '\'') out += F("&#39;");
     else out += c;
   }
   return out;
@@ -233,6 +256,7 @@ void buildApSSID() {
 }
 
 void drawSetupScreen(const String &status = "") {
+  invalidateClockRender();
   board.display().fillScreen(C_BLACK);
   drawCenteredText("RETRO CLOCK SETUP", 15, 3, C_CYAN);
   drawCenteredText("CONNECT WI-FI", 72, 2, C_WHITE);
@@ -244,6 +268,7 @@ void drawSetupScreen(const String &status = "") {
 }
 
 void drawConnectingScreen() {
+  invalidateClockRender();
   board.display().fillScreen(C_BLACK);
   drawCenteredText("RETRO CLOCK", 35, 3, C_CYAN);
   drawCenteredText("CONNECTING", 105, 3, C_AMBER);
@@ -252,6 +277,7 @@ void drawConnectingScreen() {
 }
 
 void drawConnectedScreen() {
+  invalidateClockRender();
   board.display().fillScreen(C_BLACK);
   drawCenteredText("CONNECTED", 28, 3, C_GREEN);
   drawCenteredText(WiFi.localIP().toString(), 88, 3, C_WHITE);
@@ -283,49 +309,106 @@ void drawSevenSegmentDigit(int digit, int x, int y, int w, int h, int t,
   segment(0x40, x + t, y + half - t / 2, w - 2 * t, t);  // G
 }
 
+void updateSevenSegmentDigit(int value, int &cachedValue,
+                             int x, int y, int w, int h, int t,
+                             uint16_t onColor, uint16_t offColor) {
+  if (cachedValue == value) return;
+  drawSevenSegmentDigit(value, x, y, w, h, t, onColor, offColor);
+  cachedValue = value;
+}
+
 void drawClockColon(int x, int y, int size, uint16_t color) {
   board.display().fillRect(x, y + 32, size, size, color);
   board.display().fillRect(x, y + 76, size, size, color);
 }
 
-void drawClock() {
-  time_t now = time(nullptr);
-  struct tm local{};
-  if (now < 1700000000 || !localtime_r(&now, &local)) return;
+void drawClockFrame() {
+  board.display().fillScreen(C_BLACK);
+  drawCenteredText(zoneDisplayLabel(), 244, 2, C_GREEN);
+  drawCenteredText("SETUP: WT32-CLOCK.LOCAL", 300, 1, C_MUTED);
+  clockCache.frameDrawn = true;
+  clockCache.epochSecond = 0;
+  clockCache.hourTens = -1;
+  clockCache.hourOnes = -1;
+  clockCache.minuteTens = -1;
+  clockCache.minuteOnes = -1;
+  clockCache.secondTens = -1;
+  clockCache.secondOnes = -1;
+  clockCache.colonPhase = -1;
+  clockCache.dateKey = -1;
+  clockCache.networkKey = "";
+}
 
-  timeSynced = true;
-  if (local.tm_sec == lastRenderedSecond) return;
-  lastRenderedSecond = local.tm_sec;
-
-  board.display().fillRect(0, 0, 480, 188, C_BLACK);
-
-  const int mainY = 30;
-  const int mainW = 60;
-  const int mainH = 116;
-  const int mainT = 10;
-  drawSevenSegmentDigit(local.tm_hour / 10, 34, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
-  drawSevenSegmentDigit(local.tm_hour % 10, 102, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
-  drawClockColon(174, mainY, 10, (local.tm_sec % 2) ? C_AMBER_DIM : C_AMBER);
-  drawSevenSegmentDigit(local.tm_min / 10, 194, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
-  drawSevenSegmentDigit(local.tm_min % 10, 262, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
-
-  drawSevenSegmentDigit(local.tm_sec / 10, 372, 65, 28, 56, 5, C_CYAN, rgb565(2, 22, 28));
-  drawSevenSegmentDigit(local.tm_sec % 10, 408, 65, 28, 56, 5, C_CYAN, rgb565(2, 22, 28));
+void updateClockDate(const struct tm &local) {
+  const int key = (local.tm_year + 1900) * 1000 + local.tm_yday;
+  if (clockCache.dateKey == key) return;
 
   static const char *months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                                   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
   static const char *weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
   char dateLine[32];
   snprintf(dateLine, sizeof(dateLine), "%s %02d %s %04d",
-           weekdays[local.tm_wday], local.tm_mday, months[local.tm_mon], local.tm_year + 1900);
+           weekdays[local.tm_wday], local.tm_mday,
+           months[local.tm_mon], local.tm_year + 1900);
 
-  board.display().fillRect(0, 188, 480, 132, C_BLACK);
+  // Only the date strip is cleared, and only when the calendar day changes.
+  board.display().fillRect(0, 192, 480, 38, C_BLACK);
   drawCenteredText(dateLine, 199, 3, C_WHITE);
-  drawCenteredText(zoneDisplayLabel(), 244, 2, C_GREEN);
+  clockCache.dateKey = key;
+}
 
-  String networkLine = "IP " + WiFi.localIP().toString();
-  drawCenteredText(networkLine, 282, 1, WiFi.status() == WL_CONNECTED ? C_CYAN : C_RED);
-  drawCenteredText("SETUP: WT32-CLOCK.LOCAL", 300, 1, C_MUTED);
+void updateClockNetworkLine() {
+  const bool connected = WiFi.status() == WL_CONNECTED;
+  String key = connected ? String("IP ") + WiFi.localIP().toString()
+                         : String("WIFI OFFLINE");
+  if (clockCache.networkKey == key) return;
+
+  board.display().fillRect(0, 277, 480, 20, C_BLACK);
+  drawCenteredText(key, 282, 1, connected ? C_CYAN : C_RED);
+  clockCache.networkKey = key;
+}
+
+void drawClock() {
+  const time_t now = time(nullptr);
+  struct tm local{};
+  if (now < 1700000000 || !localtime_r(&now, &local)) return;
+
+  timeSynced = true;
+  if (!clockCache.frameDrawn) drawClockFrame();
+  if (clockCache.epochSecond == now) return;
+  clockCache.epochSecond = now;
+
+  constexpr int mainY = 30;
+  constexpr int mainW = 60;
+  constexpr int mainH = 116;
+  constexpr int mainT = 10;
+
+  // Each cache entry maps to one physical digit. A digit is redrawn only when
+  // its value changes; the rest of the display is left untouched.
+  updateSevenSegmentDigit(local.tm_hour / 10, clockCache.hourTens,
+                          34, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
+  updateSevenSegmentDigit(local.tm_hour % 10, clockCache.hourOnes,
+                          102, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
+  updateSevenSegmentDigit(local.tm_min / 10, clockCache.minuteTens,
+                          194, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
+  updateSevenSegmentDigit(local.tm_min % 10, clockCache.minuteOnes,
+                          262, mainY, mainW, mainH, mainT, C_AMBER, C_AMBER_DIM);
+
+  const int colonPhase = local.tm_sec & 1;
+  if (clockCache.colonPhase != colonPhase) {
+    drawClockColon(174, mainY, 10, colonPhase ? C_AMBER_DIM : C_AMBER);
+    clockCache.colonPhase = colonPhase;
+  }
+
+  // Seconds normally touch one small digit per second; at x9 -> x0 both
+  // second digits can change. No HH:MM or background redraw is performed.
+  updateSevenSegmentDigit(local.tm_sec / 10, clockCache.secondTens,
+                          372, 65, 28, 56, 5, C_CYAN, C_SECOND_DIM);
+  updateSevenSegmentDigit(local.tm_sec % 10, clockCache.secondOnes,
+                          408, 65, 28, 56, 5, C_CYAN, C_SECOND_DIM);
+
+  updateClockDate(local);
+  updateClockNetworkLine();
 }
 
 void refreshNetworkScan() {
@@ -692,7 +775,6 @@ void setup() {
   loadSettings();
   configureRoutes();
 
-  // Arduino-ESP32 requires the hostname to be set before Wi-Fi is started.
   WiFi.setHostname(kHostname);
   WiFi.persistent(false);
 
@@ -700,6 +782,7 @@ void setup() {
   Serial.println("============================================================");
   Serial.println(" WT32-SC01-PLUS / 12_RetroClock");
   Serial.println(" Web AP setup -> home Wi-Fi -> NTP -> seven-segment clock");
+  Serial.println(" Incremental display refresh: changed digits only");
   Serial.println("============================================================");
 
   if (!tryStoredWiFi()) {
