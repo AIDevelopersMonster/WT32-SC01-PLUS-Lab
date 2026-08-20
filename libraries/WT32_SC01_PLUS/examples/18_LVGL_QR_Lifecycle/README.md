@@ -1,6 +1,6 @@
 # 18_LVGL_QR_Lifecycle
 
-Espressif BLE provisioning QR lifecycle for the WT32-SC01-PLUS LVGL HMI shell.
+Espressif QR-driven provisioning lifecycle for the WT32-SC01-PLUS LVGL HMI shell.
 
 Target specimen:
 
@@ -17,13 +17,33 @@ Earlier repository examples already demonstrate conventional Wi-Fi configuration
 
 `18_LVGL_QR_Lifecycle` deliberately tests a different onboarding mechanism: the **Espressif provisioning protocol driven from a QR code**.
 
-The intended user flow is:
+The user does not type an SSID/password into a hidden device webpage. Instead, the display presents an Espressif provisioning QR, the phone application reads the provisioning identity and PoP, and the selected Wi-Fi credentials are delivered through the Espressif provisioning protocol.
+
+## Current transport: SoftAP
+
+The first implementation used BLE transport with Arduino-ESP32 3.3.8. Physical testing on the reference ESP32-S3 specimen exposed a reproducible startup panic in the BLE controller before QR scanning could begin.
+
+Observed sequence:
+
+```text
+PROV: starting Espressif BLE provisioning manager
+btdm: ...
+MAGIC fadebead VERSION ...
+HLI Magic mismatch ...
+Guru Meditation Error: Core 1 panic'ed (LoadProhibited)
+```
+
+The board then entered a reboot loop, producing synchronized display flicker and an audible speaker click.
+
+This failure is retained as evidence. It is not classified as a QR-rendering failure and it occurred before phone interaction.
+
+The corrected implementation uses the **official Espressif SoftAP provisioning transport** with the same QR-driven application flow:
 
 ```text
 unconfigured device
         |
         v
-Espressif BLE provisioning starts
+Espressif SoftAP provisioning starts
         |
         v
 LVGL displays provisioning QR
@@ -32,7 +52,7 @@ LVGL displays provisioning QR
 phone scans QR in Espressif provisioning app
         |
         v
-phone sends selected Wi-Fi credentials over BLE provisioning protocol
+app uses Security 1 + PoP and sends selected Wi-Fi credentials
         |
         v
 ESP32-S3 joins Wi-Fi and obtains IP
@@ -41,44 +61,64 @@ ESP32-S3 joins Wi-Fi and obtains IP
 same LVGL QR area changes to information / project QR
 ```
 
-This is **not** a hidden web page and **not** a Wi-Fi captive portal.
+This remains **Espressif protocol provisioning**, not a captive portal and not a browser configuration page.
 
-## Espressif provisioning protocol
+## Provisioning payload
 
-The example uses Arduino-ESP32 `WiFiProv` with:
-
-```text
-Transport: BLE
-Security:  Protocomm / Security 1
-PoP:       embedded in the QR payload
-```
-
-The provisioning payload follows the Espressif format:
+The corrected QR payload uses:
 
 ```json
 {
   "ver": "v1",
   "name": "PROV_xxxxxx",
   "pop": "xxxxxxxx",
-  "transport": "ble"
+  "transport": "softap"
 }
 ```
 
-The service name and PoP are derived deterministically from the ESP32-S3 eFuse MAC for this laboratory example. They are also printed to Serial for evidence/debugging.
+Security remains:
 
-The QR should be scanned using a compatible official Espressif provisioning client such as **ESP BLE Provisioning**, rather than with a normal camera app alone.
+```text
+Protocomm / Security 1
+PoP embedded in QR payload
+```
+
+The service name and PoP are deterministically derived from the ESP32-S3 eFuse MAC for this laboratory example and are also printed to Serial.
+
+## PSRAM requirement
+
+The physical log from the failed run also showed:
+
+```text
+octal_psram: PSRAM chip is not connected, or wrong PSRAM line mode
+```
+
+The reference Panlee board uses **2 MiB QSPI PSRAM**, not OPI PSRAM.
+
+For Arduino IDE select:
+
+```text
+Board:  ESP32S3 Dev Module
+PSRAM:  QSPI PSRAM
+```
+
+The example now contains a compile-time guard requiring the QSPI/QUAD PSRAM configuration. Repository CI compiles example 18 separately with:
+
+```text
+esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M
+```
+
+This prevents the previously observed OPI/Octal mismatch from being silently accepted.
 
 ## QR lifecycle
 
 The HOME page intentionally does not show a provisioning QR immediately at boot.
 
-The QR appears only after the Arduino provisioning stack reports:
+The QR appears only after:
 
 ```text
 ARDUINO_EVENT_PROV_START
 ```
-
-This prevents an already-provisioned unit from briefly showing a false onboarding QR.
 
 When the station obtains an IP address, the same QR object changes from the provisioning payload to:
 
@@ -86,17 +126,15 @@ When the station obtains an IP address, the same QR object changes from the prov
 https://github.com/AIDevelopersMonster/WT32-SC01-PLUS-Lab
 ```
 
-This establishes the reusable lifecycle pattern:
+So the reusable pattern remains:
 
 ```text
 PROVISIONING QR -> CONNECTED INFORMATION QR
 ```
 
-A future product can replace the landing URL with a stable product/help/firmware redirect without changing the provisioning architecture.
-
 ## Retained HMI features
 
-The example preserves the previously validated application layers:
+The example preserves:
 
 - `HOME / REMOTE / SETTINGS / INFO` navigation;
 - Light/Dark theme;
@@ -111,15 +149,13 @@ The SETTINGS page adds:
 RESET WIFI + REBOOT
 ```
 
-which erases saved Wi-Fi credentials and reboots so the provisioning flow can be tested repeatedly without erasing the separate UI Preferences namespace.
+which erases saved Wi-Fi credentials and reboots so the QR provisioning sequence can be repeated without deleting the separate UI Preferences namespace.
 
 ## Thread-safety rule
 
-Arduino provisioning/Wi-Fi events run from another FreeRTOS task.
+Provisioning/Wi-Fi events run from another FreeRTOS task.
 
-The event handler therefore **does not call LVGL directly**. It only publishes a small network state. The Arduino `loop()` consumes that state and updates LVGL from the UI task context.
-
-This separation is intentional and should be retained in later networked HMI examples.
+The event handler therefore **does not call LVGL directly**. It publishes a small network state; the Arduino `loop()` applies that state to the UI.
 
 ## Dependencies
 
@@ -129,75 +165,72 @@ LVGL 8.3.11
 WiFiProv (included with Arduino-ESP32)
 ```
 
-The example `build_opt.h` contains:
+`build_opt.h`:
 
 ```text
 -DLV_CONF_SKIP
 -DLV_USE_QRCODE=1
 ```
 
-because the LVGL 8.3 default configuration leaves the QR-code widget disabled.
-
 ## Current status
 
 ```text
-SOURCE CREATED
-CI TARGET TO BE ADDED
-PHYSICAL VALIDATION REQUIRED
+SOURCE CORRECTED AFTER PHYSICAL FAIL
+CI TARGET ADDED WITH QSPI PSRAM PROFILE
+BLE TRANSPORT: PHYSICAL FAIL ON ARDUINO-ESP32 3.3.8 / ESP32-S3
+SOFTAP QR TRANSPORT: PHYSICAL VALIDATION REQUIRED
 WEB FLASHER: NOT YET ELIGIBLE
 ```
 
-## Physical validation checklist
+## Physical validation checklist for corrected build
 
-For the reference Panlee specimen, the important test is the complete **phone -> QR -> BLE provisioning -> Wi-Fi** flow.
+1. In Arduino IDE select **ESP32S3 Dev Module** and **QSPI PSRAM**.
+2. Flash the corrected `18_LVGL_QR_Lifecycle`.
+3. Confirm boot log no longer reports `octal_psram` initialization failure.
+4. Confirm Serial prints:
 
-1. Start from a board with no saved Wi-Fi credentials. If necessary use `SETTINGS -> RESET WIFI + REBOOT`.
-2. Confirm Serial reports the generated `PROV_...` service name and QR payload.
-3. Confirm the HOME page changes from `NETWORK STARTING` to `ESPRESSIF BLE PROVISIONING`.
-4. Confirm a QR is rendered cleanly on the 480x320 display.
-5. Open the Espressif provisioning application on the phone.
-6. Scan the QR from the physical WT32-SC01-PLUS screen.
-7. Confirm the app recognizes the provisioning service without manually typing the service name/PoP.
-8. Select a real 2.4 GHz Wi-Fi network and provide its password in the app.
-9. Confirm Serial reports credential reception/success.
-10. Confirm the board obtains a station IP address.
-11. Confirm the HOME page changes to `DEVICE ONLINE`.
-12. Confirm the QR changes from the Espressif provisioning payload to the project/info URL.
-13. Scan the connected-state QR with a normal QR scanner and confirm the project URL is encoded.
-14. Reboot without resetting Wi-Fi and confirm the board reconnects instead of asking for provisioning again.
-15. Use `RESET WIFI + REBOOT` and confirm the provisioning QR lifecycle can be started again.
-16. Confirm theme/brightness persistence and the remaining navigation still operate.
-17. Confirm no panic, reset loop, stuck touch or visible QR/render corruption occurs.
+```text
+BUILD: Espressif SoftAP QR provisioning / QSPI PSRAM
+PSRAM: 2 MiB, free ... KiB
+PROV: starting Espressif SoftAP provisioning manager
+PROV EVENT: START (SOFTAP)
+```
 
-Useful Serial markers include:
+5. Confirm the display remains stable with no reboot loop or synchronized speaker click.
+6. Confirm HOME changes to `ESPRESSIF QR PROVISIONING` and displays a clean QR.
+7. Open a compatible Espressif provisioning application on the phone.
+8. Scan the QR from the physical display.
+9. Confirm the app recognizes the device using the embedded service name / PoP.
+10. Select a real 2.4 GHz Wi-Fi network and provide its password.
+11. Confirm Serial reports credential reception and success.
+12. Confirm the board obtains a station IP address.
+13. Confirm HOME changes to `DEVICE ONLINE`.
+14. Confirm the QR changes to the repository/project information URL.
+15. Reboot without clearing Wi-Fi and confirm reconnection.
+16. Use `RESET WIFI + REBOOT` and confirm QR onboarding starts again.
+17. Confirm theme/brightness persistence and navigation still operate.
+
+Useful markers:
 
 ```text
 WT32-SC01-PLUS 18_LVGL_QR_Lifecycle
+BUILD: Espressif SoftAP QR provisioning / QSPI PSRAM
 PROV SERVICE: PROV_xxxxxx
-PROV QR PAYLOAD: {"ver":"v1",..."transport":"ble"}
-PROV EVENT: START
+PROV QR PAYLOAD: {"ver":"v1",..."transport":"softap"}
+PROV EVENT: START (SOFTAP)
 PROV EVENT: CREDENTIALS RECEIVED
 PROV EVENT: CREDENTIALS SUCCESS
 WIFI: CONNECTED x.x.x.x
 UI NETWORK STATE: CONNECTED
-READY: Espressif provisioning QR lifecycle initialized
+READY: Espressif SoftAP QR lifecycle initialized
 ```
 
 ## Claim boundary
 
-A physical PASS for this example requires successful provisioning through the QR-driven Espressif BLE flow on the named specimen.
+The initial BLE implementation is **not a PASS**. It physically failed during BLE-controller startup on the tested Arduino-ESP32 3.3.8 configuration.
 
-Source compilation, a visible QR alone, or manual Wi-Fi configuration are **not sufficient** for PASS.
+A PASS for the corrected example requires successful phone-driven QR provisioning through the Espressif SoftAP transport on the named Panlee specimen.
 
-This example does not yet certify:
+A visible QR alone, successful compilation, or manual Wi-Fi configuration is not sufficient.
 
-- provisioning from every Android/iOS phone;
-- SoftAP provisioning;
-- captive portal behavior;
-- custom provisioning endpoints;
-- production PoP/key management;
-- enterprise Wi-Fi;
-- QR URL redirect infrastructure;
-- OTA provisioning or firmware update.
-
-After the full physical phone-driven flow passes, the example becomes eligible for the main README and Web Flasher catalog.
+After the corrected full phone-driven flow passes, the example becomes eligible for the main README and Web Flasher catalog.
