@@ -21,7 +21,8 @@ jobs:
           for example in \
             01_DisplayTest 02_TouchTest 03_StorageTest 04_SDDestructiveTest 05_AudioTest \
             06_RS485Test 07_IOTest 08_WiFiTest 09_BLETest 10_TestConsole 11_RainbowTouch \
-            12_RetroClock 13_LVGL_BasicUI 14_LVGL_NavigationShell 15_LVGL_DeviceInfo; do
+            12_RetroClock 13_LVGL_BasicUI 14_LVGL_NavigationShell 15_LVGL_DeviceInfo \
+            16_LVGL_ThemeSwitch; do
             echo "Compiling $example"
             arduino-cli compile \
               --fqbn esp32:esp32:esp32s3 \
