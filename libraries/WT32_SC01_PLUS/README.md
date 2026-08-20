@@ -57,6 +57,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 10_TestConsole
 11_RainbowTouch
 12_RetroClock
+13_LVGL_BasicUI
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -65,7 +66,11 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `12_RetroClock` demonstrates a complete no-IDE product path: install from the browser Web Flasher, configure the board through its temporary Wi-Fi AP and local web page, select city/timezone, synchronize from NTP, and run a seven-segment clock with date. See [`examples/12_RetroClock/README.md`](examples/12_RetroClock/README.md).
 
-Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-specific COM numbers are intentionally not stored.
+`13_LVGL_BasicUI` is the first generic LVGL application example. It connects LVGL 8 rendering and pointer input to the BSP, then demonstrates a clickable button, live event counter and brightness slider. It requires `lvgl@8.3.11`; repository CI and the Web Flasher install that version automatically. See [`examples/13_LVGL_BasicUI/README.md`](examples/13_LVGL_BasicUI/README.md).
+
+The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
+
+Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stored.
 
 ### Video evidence
 
@@ -92,6 +97,7 @@ Use **ESP32S3 Dev Module**. Example directories contain `sketch.yaml`; host-spec
 | Combined TestConsole | AVAILABLE | Modular CLI + touch-GUI launcher |
 | RainbowTouch demo | **PHYSICAL PASS** | Interactive BSP demo: touch painting and coordinate-mapped RGB565 trail physically observed on Panlee V15 / 230208 |
 | RetroClock demo | **PHYSICAL DEMONSTRATION AVAILABLE** | Web AP setup, Wi-Fi/NTP clock and seven-segment display shown on the reference specimen; full checklist remains separately tracked |
+| LVGL Basic UI | **SOURCE + CI TARGET; PHYSICAL VALIDATION PENDING** | LVGL 8 display/touch bridge, button events and BSP backlight slider |
 
 ## RainbowTouch physical demonstration
 
