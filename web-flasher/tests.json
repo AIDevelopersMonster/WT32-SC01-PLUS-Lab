@@ -97,6 +97,12 @@
       "sketch": "17_LVGL_SettingsPersistence",
       "label": "LVGL Settings Persistence",
       "description": "Physically validated LVGL HMI demo that stores Dark/Light theme and backlight brightness in ESP32 NVS via Preferences and restores both settings after restart or power cycle."
+    },
+    {
+      "id": "lvgl-qr-lifecycle",
+      "sketch": "18_LVGL_QR_Lifecycle",
+      "label": "LVGL QR Provisioning Lifecycle",
+      "description": "Physically validated Espressif SoftAP QR provisioning demo with Security 1/PoP, phone-driven Wi-Fi onboarding, connected-state GitHub info QR, Wi-Fi reset/reprovision and the Panlee 2 MiB QSPI PSRAM profile."
     }
   ]
 }
