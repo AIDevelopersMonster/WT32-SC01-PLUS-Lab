@@ -10,7 +10,7 @@
  *   Device Info page backed by Arduino-ESP32 runtime APIs.
  *
  * Dependency: LVGL 8.3.11
- * Status: SOURCE / CI TARGET. Physical validation required before PASS.
+ * Physical status: PASS on the named Panlee specimen, 2026-08-20
  */
 
 #include <WT32_SC01_PLUS.h>
