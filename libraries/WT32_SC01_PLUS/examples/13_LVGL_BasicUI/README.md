@@ -35,25 +35,39 @@ ST7796 480x320 I80
 FT6336U-compatible touch
 ```
 
-## Physical validation status
+## Physical validation — 2026-08-20
 
-### First run — 2026-08-20
+The corrected example was compiled, uploaded and exercised on the reference Panlee specimen.
 
-Observed on the reference Panlee specimen:
+Observed result:
 
 | Item | Result |
 |---|---|
 | LVGL graphics/rendering | **PHYSICAL PASS** |
 | Screen layout | **PHYSICAL PASS** |
-| Touch interaction | **FAIL** |
-| Button event | NOT TESTED because touch failed |
-| Backlight slider | NOT TESTED because touch failed |
+| Touch-to-LVGL pointer input | **PHYSICAL PASS** |
+| `Tap me` button events | **PHYSICAL PASS** |
+| Live button counter | **PHYSICAL PASS** |
+| Backlight slider interaction | **PHYSICAL PASS** |
+| Visible brightness change | **PHYSICAL PASS** |
 
-The failure was traced to the example initialization sequence, not to a newly observed hardware failure. `WT32_SC01_PLUS::begin()` initializes display and backlight only; touch is intentionally initialized separately by `board.touch().begin()`. The first revision of this example omitted that call even though previously validated touch examples such as `11_RainbowTouch` include it.
+Physical observations included repeated button activation with the on-screen counter advancing from 7 to 8 and successful slider movement across multiple positions with corresponding backlight-level changes.
 
-The example has now been corrected to initialize touch explicitly before registering the LVGL pointer input driver. It also prints the detected touch-controller identifiers to Serial before starting the UI.
+### Initial touch failure and fix
 
-**Current status:** graphics physically passed; corrected touch path requires one repeat physical run before the example can be promoted to full PHYSICAL PASS.
+The first physical run rendered the LVGL UI correctly but touch did not respond. The failure was traced to the example initialization sequence rather than the hardware or BSP touch driver.
+
+`WT32_SC01_PLUS::begin()` initializes display and backlight only. Touch is intentionally initialized separately by:
+
+```cpp
+board.touch().begin();
+```
+
+The first revision of `13_LVGL_BasicUI` omitted that call. Previously validated examples such as `11_RainbowTouch` already initialized touch explicitly. After adding `board.touch().begin()` before registering the LVGL pointer driver, the same physical specimen passed touch, button and slider interaction.
+
+The corrected example also prints detected touch-controller identifiers to Serial before starting the UI.
+
+**Final status: PHYSICAL PASS** for the named Panlee `ZX3D50CE08S-V15-USRC / 230208` specimen.
 
 ## Expected UI
 
@@ -63,8 +77,6 @@ The screen contains:
 - `Tap me` button;
 - live `Button presses` counter;
 - `Backlight` slider from 10% to 100%.
-
-A successful repeat physical run should confirm display rendering, touch-to-LVGL coordinate mapping, button events, slider interaction, and visible backlight level changes.
 
 ## Why this example exists
 
