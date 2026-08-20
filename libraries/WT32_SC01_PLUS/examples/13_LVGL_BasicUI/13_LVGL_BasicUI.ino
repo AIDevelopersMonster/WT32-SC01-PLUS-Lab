@@ -101,9 +101,19 @@ void setup() {
     Serial.println("WT32-SC01-PLUS 13_LVGL_BasicUI");
 
     if (!board.begin()) {
-        Serial.println("ERROR: BSP initialization failed");
+        Serial.println("ERROR: BSP display/backlight initialization failed");
         while (true) delay(1000);
     }
+
+    if (!board.touch().begin()) {
+        Serial.println("ERROR: touch initialization failed");
+        while (true) delay(1000);
+    }
+
+    Serial.printf("Touch ready: chip=0x%02X firmware=0x%02X focaltech=0x%02X\n",
+                  board.touch().chipCode(),
+                  board.touch().firmwareId(),
+                  board.touch().focalTechId());
 
     board.backlight().set(80);
 

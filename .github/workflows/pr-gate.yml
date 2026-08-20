@@ -6,8 +6,13 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 # This workflow is the single merge-facing status for pull requests to main.
+# Web Flasher is reused here for build validation. Its deployment steps are
+# already gated to main/non-PR events, but reusable workflows cannot elevate
+# permissions above the caller, so the caller must grant its declared scope.
 jobs:
   platformio:
     name: PlatformIO
