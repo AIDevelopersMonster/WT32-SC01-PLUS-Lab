@@ -1,25 +1,524 @@
-# Panlee adaptation workspace
+# ESP32-TUX on Panlee WT32-SC01-PLUS
 
-This directory is reserved for the controlled adaptation of ESP32-TUX to the physically validated Panlee reference specimen.
+## ESP-IDF 6.0.2 adaptation and physical validation
 
-## Baseline changes required before first flash
+This directory documents the controlled adaptation of the third-party **ESP32-TUX** project for the physically tested:
 
-1. Select ESP32-S3 / WT32-SC01 Plus explicitly.
-2. Declare the real **16 MB Flash** device instead of the upstream 8 MB default.
-3. Review the partition table and generated image offsets before upload.
-4. Preserve the upstream WT32-SC01 Plus pin mapping because it matches the lab's validated Panlee mapping.
-5. Treat the upstream 40 MHz LCD bus setting as unverified on this specimen; begin conservatively if toolchain adaptation requires changing it.
-6. Replace demo timezone/OTA settings with deliberate test configuration.
-7. Do not encode Wi-Fi credentials in committed source or sdkconfig files.
+**Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208**
 
-## First-build policy
+The original ESP32-TUX project targets an older ESP-IDF 5-era environment. This adaptation brings it to **ESP-IDF 6.0.2**, resolves incompatible framework/dependency APIs, preserves the validated WT32-SC01-PLUS hardware mapping, declares the real 16 MiB flash device, and validates the result on a real Panlee board.
 
-The first successful build should minimize semantic changes to ESP32-TUX. The purpose is to answer whether the upstream architecture can run on this Panlee revision with its actual memory configuration, not to modernize the whole application at once.
+> Validation rule: a feature is marked `PASS` only when there is physical runtime evidence from the Panlee board. Presence in source code or a visible GUI control alone is not considered hardware validation.
 
-If ESP-IDF API drift prevents an unchanged build, compatibility fixes must be documented separately from hardware-profile changes.
+---
 
-## Status
+## Current status
 
-`CONFIGURATION_DESIGN_IN_PROGRESS`
+| Function | Status | Evidence |
+|---|---|---|
+| ESP-IDF 6.0.2 build | **PASS** | Full build completed |
+| Flash write | **PASS** | esptool write + hash verification |
+| Physical boot | **PASS** | Serial boot log |
+| ESP32-S3 target | **PASS** | Runtime / bootloader |
+| Chip revision v0.2 | **PASS** | Bootloader/runtime |
+| 16 MiB flash | **PASS** | Bootloader/runtime |
+| 2 MiB PSRAM detection | **PASS** | Runtime detection |
+| PSRAM memory test | **PASS** | `SPI SRAM memory test OK` |
+| PSRAM heap integration | **PASS** | 2048 KiB added to heap |
+| Display | **PASS** | Physical display |
+| LVGL UI | **PASS** | Physical pages rendered |
+| Touch / page navigation | **PASS** | Physical navigation + button events |
+| SPIFFS | **PASS** | Mounted, file read, wallpaper load |
+| SD card detection | **PASS** | SDHC detected |
+| SD filesystem mount | **PASS** | `S Drive is ready` |
+| SD sample `readme.txt` read | `NOT TESTED` | File absent on tested card |
+| SoftAP provisioning | **PASS** | Full provisioning flow |
+| Protocomm Security 1 | **PASS** | Runtime Security 1 exchange |
+| Wi-Fi credentials | **PASS** | Credentials accepted |
+| Wi-Fi connection | **PASS** | IP acquired |
+| Credential persistence | **PASS** | Auto reconnect after reboot |
+| NTP / SNTP | **PASS** | Synchronization event |
+| Moscow UTC+3 / DST=0 | **PASS** | `MSK-3` + physical clock |
+| Light / Dark theme switching | **PASS** | Physical/runtime events |
+| Brightness control UI | **PASS** | Physical settings screen |
+| Remote page UI | **PASS** | Physical page |
+| Remote actions | `NOT TESTED` | Application mapping not validated |
+| QR information screen | **PASS** | Physical display |
+| QR provisioning payload | **PASS** | Runtime provisioning flow |
+| OTA UI / button | **PASS** | Physical button |
+| OTA task start | **PASS** | `OTA: Starting OTA` |
+| OTA download / install | `NOT VALIDATED` | Current endpoint connection fails |
+| Weather UI | **PASS** | Physical screen |
+| Live weather data | `NOT CONFIGURED` | API key missing |
 
-No adapted firmware in this directory has yet been physically validated.
+---
+
+## Physical target
+
+| Item | Observed / configured |
+|---|---|
+| Board | Panlee WT32-SC01-PLUS |
+| PCB | ZX3D50CE08S-V15-USRC |
+| Marking/date | 230208 |
+| MCU | ESP32-S3 |
+| Silicon revision | v0.2 |
+| CPU cores | Dual Core |
+| Runtime CPU frequency | 160 MHz |
+| Flash | 16 MiB |
+| Flash mode | DIO |
+| Flash frequency | 80 MHz |
+| PSRAM | 2 MiB |
+| PSRAM runtime speed | 40 MHz |
+| Framework | ESP-IDF 6.0.2 |
+| Firmware | ESP32-TUX 0.11.0 |
+| GUI | LVGL |
+| Display driver | LovyanGFX |
+| Wi-Fi provisioning | ESP-IDF Network Provisioning / SoftAP |
+| Provisioning security | Protocomm Security 1 |
+| Time zone | Moscow fixed UTC+3 (`MSK-3`) |
+
+The application Device Info page currently labels Flash and PSRAM as `external`. That text is generated by ESP32-TUX and should not be treated as authoritative evidence of the physical memory topology of every WT32-SC01-PLUS OEM variant.
+
+---
+
+## ESP-IDF 6 migration
+
+The successful Panlee firmware required migration of several legacy dependencies and APIs:
+
+- ESP32-S3 target configuration;
+- 16 MiB flash declaration;
+- `wifi_provisioning` -> managed `network_provisioning`;
+- explicit Protocomm Security 1 enablement;
+- managed cJSON instead of the removed built-in JSON component;
+- ESP-IDF 6 compatible LovyanGFX;
+- ESP-IDF 6 HTTP client event handling;
+- GCC 15 compatibility for legacy `fmt`;
+- LVGL v8 selector compatibility with the newer C++ compiler;
+- Moscow fixed UTC+3 configuration.
+
+The resulting firmware builds successfully with **ESP-IDF 6.0.2** and boots on the physical Panlee board.
+
+### Dependency note
+
+The original pinned LovyanGFX revision had deep incompatibilities with ESP-IDF 6, including removed/private GPIO/GDMA APIs and split driver dependencies. The Panlee adaptation therefore uses a newer exact LovyanGFX revision with explicit ESP-IDF 6 support rather than attempting a large local backport of private framework internals.
+
+---
+
+## Build and image size
+
+Successful build output:
+
+```text
+ESP32-TUX.bin binary size 0x1eee70 bytes.
+Smallest app partition is 0x200000 bytes.
+0x11190 bytes (3%) free.
+```
+
+The image fits the 2 MiB application partition, but only about 3% remains free. Future additions must therefore monitor firmware size carefully.
+
+The ESP-IDF size report also shows the configured IRAM section fully occupied. This does not invalidate the current successful build, but it is another reason to treat further feature growth conservatively.
+
+---
+
+## Flash and partition layout
+
+The physical board contains 16 MiB flash. The first validation baseline intentionally preserves the original ESP32-TUX partition geometry instead of redesigning storage before hardware validation.
+
+| Partition | Offset | Size |
+|---|---:|---:|
+| NVS | `0x9000` | 16 KiB |
+| OTA data | `0xD000` | 8 KiB |
+| PHY init | `0xF000` | 4 KiB |
+| Factory app | `0x10000` | 2 MiB |
+| OTA 0 | `0x210000` | 2 MiB |
+| OTA 1 | `0x410000` | 2 MiB |
+| Storage / SPIFFS | `0x610000` | 512 KiB |
+
+Generated flash arguments:
+
+```text
+--flash-mode dio --flash-freq 80m --flash-size 16MB
+0x0 bootloader/bootloader.bin
+0x8000 partition_table/partition-table.bin
+0xd000 ota_data_initial.bin
+0x610000 storage.bin
+0x10000 ESP32-TUX.bin
+```
+
+The remaining physical flash is intentionally unused in this baseline.
+
+---
+
+## Physical boot evidence
+
+The firmware was successfully written and verified:
+
+```text
+Hash of data verified.
+```
+
+The bootloader then reported:
+
+```text
+ESP-IDF v6.0.2 2nd stage bootloader
+chip revision: v0.2
+Boot SPI Speed : 80MHz
+SPI Mode       : DIO
+SPI Flash Size : 16MB
+```
+
+The application loaded from the factory partition at `0x10000`.
+
+Application runtime information:
+
+```text
+Firmware Ver : 0.11.0
+Project Name : ESP32-TUX
+IDF Version  : v6.0.2
+
+Controller   : esp32s3 Rev.2
+CPU Cores    : Dual Core
+CPU Speed    : 160Mhz
+Flash Size   : 16MB
+PSRAM Size   : 2MB
+Connectivity : 2.4GHz WIFI/BLE
+```
+
+---
+
+## PSRAM validation
+
+PSRAM is validated by runtime evidence, not only by a Device Info label.
+
+Observed boot messages:
+
+```text
+esp_psram: Found 2MB PSRAM device
+esp_psram: Speed: 40MHz
+esp_psram: SPI SRAM memory test OK
+esp_psram: Adding pool of 2048K of PSRAM memory to heap allocator
+esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+wifi_init: WiFi/LWIP prefer SPIRAM
+```
+
+This supports a **PSRAM subsystem physical PASS** for detection, memory test and heap integration.
+
+A separate heavy application allocation/stress test may still be useful later, but it is no longer correct to describe PSRAM as merely "detected but unverified".
+
+---
+
+## Filesystems
+
+### SPIFFS
+
+SPIFFS initializes successfully. The firmware reads its internal test file and loads the wallpaper from the filesystem:
+
+```text
+Initializing SPIFFS
+F Drive is ready
+Read from F:/readme.txt : ESP32-TUX - A Touch UX Template
+Loading - F:/bg/dev_bg9.bin
+```
+
+This physically confirms SPIFFS and LVGL filesystem integration.
+
+### SD card
+
+The physical SD interface also works.
+
+Observed card data:
+
+```text
+Filesystem mounted
+Name: SD
+Type: SDHC
+Speed: 20.00 MHz
+Size: 7680MB
+sector_size=512
+S Drive is ready
+MSG_SDCARD_STATUS 1
+```
+
+The tested card did not contain `S:/readme.txt`, so that particular example file read failed. This does **not** invalidate the successful SD card detection and filesystem mount.
+
+A later test can add `/readme.txt` to the SD card to turn the sample file read into a separate `PASS`.
+
+---
+
+## Graphical interface
+
+The complete ESP32-TUX interface runs on the physical Panlee display.
+
+Physically demonstrated pages include:
+
+- **HOME**
+- **REMOTE**
+- **SETTINGS**
+- **OTA / DEVICE INFO**
+
+Footer navigation events are received correctly by the firmware.
+
+### HOME
+
+The main dashboard contains:
+
+- clock and date;
+- weather area;
+- connectivity/status icons;
+- graphical wallpaper;
+- four-page navigation.
+
+The physical screen displayed the correct Moscow date/time after synchronization.
+
+### REMOTE
+
+The Remote page exposes twelve programmable positions (`0` through `11`).
+
+The page itself is physically validated. Application-specific actions behind the buttons have not yet been validated and remain a separate integration task.
+
+### SETTINGS
+
+The settings page provides:
+
+- current Wi-Fi state;
+- assigned IP address;
+- Wi-Fi reset;
+- QR code;
+- brightness control;
+- Light/Dark theme control.
+
+Theme changes were also observed in the runtime log:
+
+```text
+Light theme set
+Dark theme set
+```
+
+### DEVICE INFO / OTA
+
+The OTA page exposes firmware version and runtime device information directly on the screen, making it especially useful as photographic hardware evidence during lab validation.
+
+---
+
+## QR-code lifecycle
+
+One of the most useful design ideas in ESP32-TUX is the **dual-purpose QR area**.
+
+### Before Wi-Fi configuration: provisioning QR
+
+When no Wi-Fi credentials are stored, the device starts a SoftAP provisioning service.
+
+Observed physical test:
+
+```text
+Provisioning started with service name : TUX_1F305C
+```
+
+Generated payload:
+
+```json
+{
+  "ver": "v1",
+  "name": "TUX_1F305C",
+  "pop": "abcd1234",
+  "transport": "softap"
+}
+```
+
+The same data is sent to the GUI and displayed as a QR code for a compatible Espressif provisioning client.
+
+The physical test reached the Security 1 exchange, accepted Wi-Fi credentials and completed provisioning successfully:
+
+```text
+NETWORK_PROV_WIFI_CRED_RECV
+Received Wi-Fi credentials
+NETWORK_PROV_WIFI_CRED_SUCCESS
+Provisioning successful
+NETWORK_PROV_END
+```
+
+### Important: this is not a captive portal
+
+Connecting to the provisioning AP and opening `192.168.4.1` in a normal web browser currently produces HTTP 404 responses.
+
+That is expected for the current architecture. ESP32-TUX exposes the ESP-IDF provisioning protocol over SoftAP; it does not implement a normal configuration webpage at `/`.
+
+### After provisioning: information / landing QR
+
+In normal connected mode, upstream ESP32-TUX uses the same QR object as an informational link to the project page.
+
+This makes the QR area an excellent reusable pattern:
+
+1. **initial onboarding** before Wi-Fi is configured;
+2. **documentation/project link** after configuration;
+3. firmware/help page;
+4. video/demo page;
+5. product information;
+6. controlled commercial or affiliate destination.
+
+For future Panlee-based devices, a stable redirecting landing URL is preferable to hard-coding the final destination. The firmware URL can remain unchanged while the server decides whether to send the user to documentation, a release page, a video, a product page or another current destination.
+
+---
+
+## Wi-Fi provisioning — physical PASS
+
+The full provisioning sequence was physically demonstrated.
+
+The board:
+
+1. created the SoftAP;
+2. started DHCP at `192.168.4.1`;
+3. performed Protocomm Security 1 communication;
+4. received SSID/password;
+5. connected to the target Wi-Fi network;
+6. obtained an IP address;
+7. stopped provisioning;
+8. stored the credentials.
+
+Observed station IP during the test:
+
+```text
+10.14.98.252
+```
+
+After reboot, ESP32-TUX reported:
+
+```text
+Already provisioned, starting Wi-Fi STA
+```
+
+and automatically reconnected to the stored network.
+
+This confirms both provisioning and credential persistence.
+
+---
+
+## Time synchronization — Moscow UTC+3
+
+After obtaining an IP address, ESP32-TUX initializes SNTP and receives a synchronization event:
+
+```text
+Initializing SNTP
+Notification of a time synchronization event
+Got time - Self-destruct Task :)
+```
+
+The Panlee adaptation uses:
+
+```text
+CONFIG_TIMEZONE_STRING="MSK-3"
+```
+
+which represents Moscow fixed UTC+3 with no daylight-saving transition.
+
+The physical display showed the correct Moscow date/time.
+
+Status:
+
+- **NTP/SNTP: PASS**
+- **Moscow UTC+3 / DST=0: PASS**
+
+The source still uses several deprecated SNTP wrapper names under ESP-IDF 6; they are non-blocking and can be migrated to the current `esp_sntp_*` API in a later cleanup.
+
+---
+
+## OTA
+
+ESP32-TUX contains a real OTA execution path; the update button is not only a visual placeholder.
+
+Physical button activation produced:
+
+```text
+OTA: Starting OTA
+```
+
+and entered `esp_https_ota`.
+
+The currently configured OTA endpoint was not reachable during validation:
+
+```text
+esp_https_ota: Failed to open HTTP connection: ESP_ERR_HTTP_CONNECT
+esp_https_ota: Failed to establish HTTP connection
+OTA: OTA Begin failed
+```
+
+Therefore the correct validation status is:
+
+- **OTA UI: PASS**
+- **OTA button/event pipeline: PASS**
+- **OTA task startup: PASS**
+- **OTA connection to current endpoint: FAIL**
+- **OTA image download/write/reboot: NOT YET VALIDATED**
+
+Do not summarize this as simply "OTA FAIL": the GUI, event dispatch and OTA task execute correctly; the current failure occurs when attempting to connect to the configured network endpoint.
+
+The next OTA validation should use a controlled reachable test endpoint and verify the complete OTA slot/reboot/rollback path.
+
+---
+
+## Weather
+
+The weather area is rendered correctly, but live weather is not configured in the current baseline.
+
+The runtime log reports:
+
+```text
+Weather API Key not set
+```
+
+Therefore placeholder values such as `0.0 C` are not evidence of a failed weather implementation.
+
+Status:
+
+- **Weather UI: PASS**
+- **Live weather service: NOT CONFIGURED**
+
+A provider URL, location and API key are required for a live-data test.
+
+---
+
+## Why this project is useful to WT32-SC01-PLUS-Lab
+
+ESP32-TUX is one of the most complete third-party validation workloads currently exercised on the Panlee board.
+
+It simultaneously uses:
+
+- ESP32-S3;
+- parallel display output;
+- LovyanGFX;
+- LVGL;
+- touch navigation;
+- SPIFFS;
+- SD storage;
+- PSRAM;
+- Wi-Fi;
+- secure SoftAP provisioning;
+- persistent network configuration;
+- SNTP/NTP;
+- QR onboarding;
+- runtime device diagnostics;
+- OTA infrastructure.
+
+The successful ESP-IDF 6.0.2 migration therefore demonstrates substantially more than basic display compatibility: it shows that the Panlee WT32-SC01-PLUS can run a comparatively complete network-connected touchscreen application using a current ESP-IDF toolchain.
+
+---
+
+## Next validation tasks
+
+Recommended follow-up work:
+
+1. Place `readme.txt` on the SD card and confirm a clean SD file-read `PASS`.
+2. Replace the unreachable OTA test URL with a controlled endpoint.
+3. Validate full `ota_0` / `ota_1` update and reboot behavior.
+4. Add valid weather provider/location/API configuration and test live data.
+5. Migrate deprecated SNTP wrappers to the current ESP-IDF 6 `esp_sntp_*` API.
+6. Clean remaining Kconfig compatibility warnings before PR.
+7. Record final physical evidence and link the demonstration video.
+
+---
+
+## Upstream
+
+This work is an adaptation/validation of the third-party **ESP32-TUX** project by Sukesh Ashok Kumar.
+
+The upstream project remains the source of the original application architecture and UI. WT32-SC01-PLUS-Lab documents the Panlee-specific ESP-IDF 6 migration, compatibility work and physical validation rather than claiming authorship of the original ESP32-TUX application.
