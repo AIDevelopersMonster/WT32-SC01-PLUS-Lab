@@ -61,3 +61,17 @@ The second target is a full application-level PlatformIO/LVGL project by SubCode
 Upstream is Apache-2.0 licensed, so a properly attributed adaptation may be maintained after the upstream baseline is physically reproduced.
 
 See [`platformio/subcoderhun-smart-desk-companion/`](platformio/subcoderhun-smart-desk-companion/).
+
+## Project 3 — BambuHelper
+
+The third target is BambuHelper, a finished ESP32-S3/WT32-SC01-PLUS companion application for Bambu Lab printers. It is particularly useful as a reference for product-level UI, browser flashing, first-boot onboarding and browser-based configuration.
+
+See [`BambuHelper/`](BambuHelper/).
+
+## Project 4 — ESP-IDF / ESP32-TUX
+
+The fourth target is Sukesh Akhilesh's ESP32-TUX reusable HMI template: ESP-IDF, LVGL 8.x, LovyanGFX, Wi-Fi provisioning, OTA, SD/SPIFFS, themes, brightness and rotation.
+
+The upstream WT32-SC01 Plus pin profile matches the lab's validated Panlee mapping, but the upstream default is an 8 MB flash profile while the reference Panlee specimen physically has 16 MB Flash. Project 4 therefore starts as a controlled Panlee adaptation with a hardware evidence gate rather than by blindly flashing an upstream binary.
+
+See [`esp-idf/esp32-tux/`](esp-idf/esp32-tux/).

@@ -1,0 +1,30 @@
+# Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208
+# Project 4 ESP32-TUX adaptation overlay.
+#
+# This file records the intended delta from the upstream ESP32-TUX
+# sdkconfig.defaults. It has NOT yet been physically validated.
+
+# Target the upstream WT32-SC01 Plus device implementation.
+CONFIG_TUX_DEVICE_WT32_SC01_PLUS=y
+
+# Physical flash size measured on the reference Panlee specimen.
+# Keep the upstream partition geometry for the first baseline run so the
+# experiment changes memory identity without simultaneously redesigning layout.
+# ESP32-TUX's partition-16MB.csv is currently content-identical to its
+# partition-8MB.csv, so the extra physical flash remains intentionally unused.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions/partition-16MB.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions/partition-16MB.csv"
+
+# Use SoftAP provisioning for the baseline to avoid adding BLE provisioning
+# as another variable in the first physical run.
+CONFIG_PROV_TRANSPORT_SOFTAP=y
+CONFIG_PROV_TRANSPORT=2
+
+# Moscow: fixed UTC+3, no DST. POSIX TZ signs are reversed from UTC notation.
+CONFIG_TIMEZONE_STRING="MSK-3"
+
+# Do not intentionally erase saved provisioning state on every reboot.
+# CONFIG_RESET_PROVISIONED is not set
