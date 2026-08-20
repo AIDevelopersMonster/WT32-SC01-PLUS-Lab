@@ -2,6 +2,13 @@
 
 Experimental Arduino board-support library for the WT32-SC01-PLUS family, developed from physical validation of specific hardware rather than assumed community pinouts.
 
+## Project credits
+
+- **Project lead, hardware work and physical validation:** Alex Malachevsky
+- **Engineering collaboration:** Commander Sol
+- **Repository:** `AIDevelopersMonster/WT32-SC01-PLUS-Lab`
+- **License:** MIT
+
 ## Validated target
 
 - Manufacturer marking: **Panlee**
@@ -76,6 +83,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 
 - [YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
 - [YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
 
 ## v0.1 status
 
@@ -124,6 +132,10 @@ Observed behavior:
 - repeated presses on `Tap me` advanced the live counter, including an observed 7 -> 8 transition;
 - the backlight slider tracked touch across multiple positions;
 - moving the slider produced visible brightness changes.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
 
 The first run's no-touch result is retained in the example README as failure history and was traced to the omitted touch initialization call rather than a hardware defect.
 
