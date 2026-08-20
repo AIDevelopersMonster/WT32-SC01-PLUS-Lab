@@ -59,29 +59,30 @@ LVGL 8.3.11
 ## Current status
 
 ```text
-SOURCE CREATED
-CI TARGET TO BE ADDED
-PHYSICAL VALIDATION REQUIRED
-WEB FLASHER: NOT YET ELIGIBLE
+SOURCE COMPLETE
+CI TARGET ADDED
+PHYSICAL PASS
+WEB FLASHER: ELIGIBLE, NOT YET CATALOGUED
 ```
 
-## Physical validation checklist
+Physical validation was completed on the reference Panlee specimen on **2026-08-20**.
 
-On the reference Panlee specimen verify:
+## Physical validation record
 
-- firmware boots without panic/reboot;
-- initial theme is Dark;
-- navigation works in Dark mode;
-- Settings shows `Dark / Light` theme control;
-- switching to Light immediately redraws the current page;
-- Light mode has readable text, cards, controls and navigation;
-- switching back to Dark works repeatedly;
-- active navigation highlighting remains correct in both themes;
-- HOME, REMOTE, SETTINGS and INFO render correctly in both themes;
-- Device Info continues updating after multiple theme changes;
-- backlight slider still controls physical brightness;
-- Remote command buttons remain touch-operable;
-- no reset, panic, visual corruption or stuck touch occurs during repeated switching.
+The completed hardware run confirmed that the intended theme-switching behavior works correctly on the physical board:
+
+- the firmware boots and renders the LVGL shell correctly;
+- the initial Dark theme is usable;
+- the Settings page switches the interface between Dark and Light at runtime;
+- switching back and forth works correctly;
+- the four-page `HOME / REMOTE / SETTINGS / INFO` navigation remains operational;
+- the active navigation state remains visually distinct in both themes;
+- the live Device Info page remains available after theme changes;
+- the physical backlight control remains operational;
+- touch interaction remains operational across the themed UI;
+- no visible rendering corruption or instability was observed during the successful physical test.
+
+Status: **PHYSICAL PASS** for the named Panlee `ZX3D50CE08S-V15-USRC / 230208` specimen.
 
 Useful Serial markers:
 
@@ -93,8 +94,10 @@ THEME: DARK
 READY: LVGL theme switch initialized
 ```
 
+## Web Flasher
+
+The example is non-destructive and has now passed physical validation, so it is eligible for the repository Web Flasher catalog. It is intentionally not marked as catalogued until the Web Flasher manifest list is updated separately.
+
 ## Claim boundary
 
-Passing this example certifies runtime Light/Dark appearance switching on the named specimen. It does not certify theme persistence across reboot, Wi-Fi, OTA, QR onboarding, weather, RS485/Modbus actions or filesystem-backed assets.
-
-After physical PASS the example becomes eligible for the main library README and repository Web Flasher catalog.
+This physical PASS certifies runtime Light/Dark appearance switching on the named specimen. It does not certify theme persistence across reboot, Wi-Fi, OTA, QR onboarding, weather, RS485/Modbus actions or filesystem-backed assets.
