@@ -65,6 +65,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 11_RainbowTouch
 12_RetroClock
 13_LVGL_BasicUI
+14_LVGL_NavigationShell
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -74,6 +75,8 @@ The library contains the diagnostic set plus compact application-level demonstra
 `12_RetroClock` demonstrates a complete no-IDE product path: install from the browser Web Flasher, configure the board through its temporary Wi-Fi AP and local web page, select city/timezone, synchronize from NTP, and run a seven-segment clock with date. See [`examples/12_RetroClock/README.md`](examples/12_RetroClock/README.md).
 
 `13_LVGL_BasicUI` is the first generic LVGL application example. It connects LVGL 8 rendering and pointer input to the BSP, then demonstrates a clickable button, live event counter and brightness slider. It requires `lvgl@8.3.11`; repository CI and the Web Flasher install that version automatically. The corrected example has been physically validated on the reference Panlee specimen. See [`examples/13_LVGL_BasicUI/README.md`](examples/13_LVGL_BasicUI/README.md).
+
+`14_LVGL_NavigationShell` builds on the validated LVGL bridge and adds a reusable four-page HMI frame with persistent `HOME / REMOTE / SETTINGS / INFO` navigation, active-page state, touch-driven page switching, generic remote command slots and a hardware backlight control in Settings. It has been physically validated on the reference Panlee specimen and is eligible for the Web Flasher catalog. See [`examples/14_LVGL_NavigationShell/README.md`](examples/14_LVGL_NavigationShell/README.md).
 
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
@@ -106,6 +109,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | RainbowTouch demo | **PHYSICAL PASS** | Interactive BSP demo: touch painting and coordinate-mapped RGB565 trail physically observed on Panlee V15 / 230208 |
 | RetroClock demo | **PHYSICAL DEMONSTRATION AVAILABLE** | Web AP setup, Wi-Fi/NTP clock and seven-segment display shown on the reference specimen; full checklist remains separately tracked |
 | LVGL Basic UI | **PHYSICAL PASS** | LVGL 8 rendering, touch pointer input, button events, live counter and backlight slider physically exercised on Panlee V15 / 230208 |
+| LVGL Navigation Shell | **PHYSICAL PASS** | Four-page persistent navigation shell, touch page switching, active-page highlighting, remote placeholders and Settings backlight control physically exercised on Panlee V15 / 230208 |
 
 ## RainbowTouch physical demonstration
 
@@ -138,6 +142,23 @@ Video evidence:
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
 
 The first run's no-touch result is retained in the example README as failure history and was traced to the omitted touch initialization call rather than a hardware defect.
+
+## LVGL Navigation Shell physical demonstration
+
+`14_LVGL_NavigationShell` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- the four-page `HOME / REMOTE / SETTINGS / INFO` shell rendered correctly;
+- the persistent bottom navigation bar remained visible and responsive;
+- page transitions followed touch input correctly;
+- active-page highlighting followed the selected page;
+- repeated navigation remained visually stable;
+- Remote command placeholders were operable;
+- the Settings backlight slider remained interactive and changed the physical display brightness;
+- the overall interface was visually suitable as the reusable base for subsequent LVGL HMI modules.
+
+This promotes `14_LVGL_NavigationShell` to **PHYSICAL PASS** for the named Panlee specimen.
 
 ## Validated LCD mapping
 
