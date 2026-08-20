@@ -82,7 +82,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `15_LVGL_DeviceInfo` keeps the validated navigation shell and turns the INFO page into a live runtime diagnostic screen. It reports ESP32-S3 model/revision/cores/CPU frequency, Arduino and ESP-IDF versions, Flash, PSRAM, heap, sketch/free-slot space, uptime and touch-controller identity. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/15_LVGL_DeviceInfo/README.md`](examples/15_LVGL_DeviceInfo/README.md).
 
-`16_LVGL_ThemeSwitch` adds a centralized runtime Light/Dark appearance layer to the validated LVGL shell while retaining navigation, live Device Info, touch input and physical backlight control. Theme changes are applied safely through deferred LVGL page rebuilds. The example has been physically validated on the reference Panlee specimen. See [`examples/16_LVGL_ThemeSwitch/README.md`](examples/16_LVGL_ThemeSwitch/README.md).
+`16_LVGL_ThemeSwitch` adds a centralized runtime Light/Dark appearance layer to the validated LVGL shell while retaining navigation, live Device Info, touch input and physical backlight control. Theme changes are applied safely through deferred LVGL page rebuilds. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/16_LVGL_ThemeSwitch/README.md`](examples/16_LVGL_ThemeSwitch/README.md).
 
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
@@ -94,6 +94,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 - [YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Device Info](https://youtube.com/shorts/vlxDE6bILbU)
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
 
 ## v0.1 status
 
@@ -118,7 +119,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | LVGL Basic UI | **PHYSICAL PASS** | LVGL 8 rendering, touch pointer input, button events, live counter and backlight slider physically exercised on Panlee V15 / 230208 |
 | LVGL Navigation Shell | **PHYSICAL PASS** | Four-page persistent navigation shell, touch page switching, active-page highlighting, remote placeholders and Settings backlight control physically exercised on Panlee V15 / 230208 |
 | LVGL Device Info | **PHYSICAL PASS** | Live ESP32-S3 runtime information, Flash/PSRAM/heap/sketch/uptime and touch-controller data displayed on the validated navigation shell |
-| LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208 |
+| LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208; Web Flasher catalogued |
 
 ## RainbowTouch physical demonstration
 
@@ -205,7 +206,11 @@ Observed behavior:
 - touch input and the physical backlight slider continued to operate;
 - no visible rendering corruption or instability was observed during the successful run.
 
-This promotes `16_LVGL_ThemeSwitch` to **PHYSICAL PASS** for the named Panlee specimen. Theme persistence across reboot is not claimed by this example.
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
+
+This promotes `16_LVGL_ThemeSwitch` to **PHYSICAL PASS** for the named Panlee specimen and includes it in the Web Flasher catalog. Theme persistence across reboot is not claimed by this example.
 
 ## Validated LCD mapping
 
