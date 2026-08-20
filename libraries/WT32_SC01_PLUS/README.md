@@ -70,6 +70,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 16_LVGL_ThemeSwitch
 17_LVGL_SettingsPersistence
 18_LVGL_QR_Lifecycle
+19_LVGL_Orientation
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -90,6 +91,8 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `18_LVGL_QR_Lifecycle` adds the physically validated Espressif QR-driven onboarding flow. It renders an Espressif SoftAP provisioning QR on the LVGL HOME page, uses Security 1 / Proof of Possession with the official provisioning protocol, accepts Wi-Fi credentials from the phone application, joins the target network, then changes the same QR area into a GitHub/project information QR. `RESET WIFI + REBOOT` allows the complete onboarding sequence to be repeated. The validated build uses the Panlee 2 MiB QSPI PSRAM profile and is included in the Web Flasher catalog. See [`examples/18_LVGL_QR_Lifecycle/README.md`](examples/18_LVGL_QR_Lifecycle/README.md).
 
+`19_LVGL_Orientation` validates LVGL 8 runtime software rotation at `0 / 90 / 180 / 270` degrees while keeping the BSP's physically validated landscape touch mapping as the native coordinate layer. LVGL performs the pointer-coordinate rotation, and the example verifies touch hit-testing with five targets in every orientation, logical resolution changes, QR geometry, theme/backlight controls and orientation persistence through NVS. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/19_LVGL_Orientation/README.md`](examples/19_LVGL_Orientation/README.md).
+
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
 Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stored.
@@ -102,6 +105,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Device Info](https://youtube.com/shorts/vlxDE6bILbU)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
 - [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 0/90/180/270 orientation and touch](https://youtube.com/shorts/ttZOVsNHwy4)
 
 ## v0.1 status
 
@@ -129,6 +133,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208; Web Flasher catalogued |
 | LVGL Settings Persistence | **PHYSICAL PASS** | Theme and backlight brightness persisted through ESP32 NVS/Preferences and restored after restart/power cycle on Panlee V15 / 230208; Web Flasher catalogued |
 | LVGL QR Lifecycle | **PHYSICAL PASS** | Espressif SoftAP QR provisioning, Security 1/PoP, credential delivery, Wi-Fi/IP, GitHub info QR transition and reset/reprovision physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
+| LVGL Orientation | **PHYSICAL PASS** | LVGL software rotation at 0/90/180/270, aligned touch hit-testing, logical resolution changes, QR/theme/backlight continuity and NVS orientation restore physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
 
 ## RainbowTouch physical demonstration
 
@@ -262,6 +267,28 @@ Video evidence:
 - [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
 
 This promotes `18_LVGL_QR_Lifecycle` to **PHYSICAL PASS** for the corrected Espressif SoftAP QR lifecycle on the named Panlee specimen and includes it in the Web Flasher catalog. The earlier BLE-controller startup failure remains documented in the example README as a separate failed transport experiment.
+
+## LVGL Orientation physical demonstration
+
+`19_LVGL_Orientation` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- runtime switching between `0 / 90 / 180 / 270` degrees worked;
+- landscape orientations used `480x320` logical geometry and portrait orientations used `320x480`;
+- the five `TL / TR / CENTER / BL / BR` touch targets remained correctly aligned with the rendered UI in every orientation;
+- LVGL pointer rotation worked on top of the existing BSP landscape touch mapping without a second application-specific transform;
+- `TEST / QR / SET / INFO` navigation remained operational after repeated rotation;
+- QR geometry remained correct and usable;
+- Light/Dark theme and the physical backlight slider remained operational;
+- selected orientation was stored through `Preferences` / NVS and restored after restart;
+- no panic, reset loop or visible rendering corruption was observed during the successful run.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 0/90/180/270 orientation and touch](https://youtube.com/shorts/ttZOVsNHwy4)
+
+This promotes `19_LVGL_Orientation` to **PHYSICAL PASS** for the named Panlee specimen and includes it in the Web Flasher catalog.
 
 ## Validated LCD mapping
 
