@@ -66,6 +66,8 @@ The library contains the diagnostic set plus compact application-level demonstra
 12_RetroClock
 13_LVGL_BasicUI
 14_LVGL_NavigationShell
+15_LVGL_DeviceInfo
+16_LVGL_ThemeSwitch
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -78,6 +80,10 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `14_LVGL_NavigationShell` builds on the validated LVGL bridge and adds a reusable four-page HMI frame with persistent `HOME / REMOTE / SETTINGS / INFO` navigation, active-page state, touch-driven page switching, generic remote command slots and a hardware backlight control in Settings. It has been physically validated on the reference Panlee specimen and is eligible for the Web Flasher catalog. See [`examples/14_LVGL_NavigationShell/README.md`](examples/14_LVGL_NavigationShell/README.md).
 
+`15_LVGL_DeviceInfo` keeps the validated navigation shell and turns the INFO page into a live runtime diagnostic screen. It reports ESP32-S3 model/revision/cores/CPU frequency, Arduino and ESP-IDF versions, Flash, PSRAM, heap, sketch/free-slot space, uptime and touch-controller identity. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/15_LVGL_DeviceInfo/README.md`](examples/15_LVGL_DeviceInfo/README.md).
+
+`16_LVGL_ThemeSwitch` adds a centralized runtime Light/Dark appearance layer to the validated LVGL shell while retaining navigation, live Device Info, touch input and physical backlight control. Theme changes are applied safely through deferred LVGL page rebuilds. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/16_LVGL_ThemeSwitch/README.md`](examples/16_LVGL_ThemeSwitch/README.md).
+
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
 Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stored.
@@ -87,6 +93,8 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 - [YouTube Shorts — WT32-SC01-PLUS 10_TestConsole combined test](https://youtube.com/shorts/vCfhNmuI3KY)
 - [YouTube Shorts — WT32-SC01-PLUS Retro Clock: Web Setup, Wi-Fi and NTP](https://youtube.com/shorts/vJq456XD2HA)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Device Info](https://youtube.com/shorts/vlxDE6bILbU)
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
 
 ## v0.1 status
 
@@ -110,6 +118,8 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | RetroClock demo | **PHYSICAL DEMONSTRATION AVAILABLE** | Web AP setup, Wi-Fi/NTP clock and seven-segment display shown on the reference specimen; full checklist remains separately tracked |
 | LVGL Basic UI | **PHYSICAL PASS** | LVGL 8 rendering, touch pointer input, button events, live counter and backlight slider physically exercised on Panlee V15 / 230208 |
 | LVGL Navigation Shell | **PHYSICAL PASS** | Four-page persistent navigation shell, touch page switching, active-page highlighting, remote placeholders and Settings backlight control physically exercised on Panlee V15 / 230208 |
+| LVGL Device Info | **PHYSICAL PASS** | Live ESP32-S3 runtime information, Flash/PSRAM/heap/sketch/uptime and touch-controller data displayed on the validated navigation shell |
+| LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208; Web Flasher catalogued |
 
 ## RainbowTouch physical demonstration
 
@@ -159,6 +169,48 @@ Observed behavior:
 - the overall interface was visually suitable as the reusable base for subsequent LVGL HMI modules.
 
 This promotes `14_LVGL_NavigationShell` to **PHYSICAL PASS** for the named Panlee specimen.
+
+## LVGL Device Info physical demonstration
+
+`15_LVGL_DeviceInfo` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- the validated four-page navigation shell remained operational;
+- the INFO page rendered live runtime diagnostic cards correctly;
+- ESP32-S3 device information was displayed from the running board;
+- the expected 16 MiB Flash and 2 MiB PSRAM configuration was reported;
+- live heap/PSRAM, sketch-space and uptime values were visible;
+- touch-controller identity was displayed;
+- repeated navigation to and from INFO remained stable;
+- the Settings backlight control continued to operate.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Device Info](https://youtube.com/shorts/vlxDE6bILbU)
+
+This promotes `15_LVGL_DeviceInfo` to **PHYSICAL PASS** for the named Panlee specimen and makes it eligible for the Web Flasher catalog.
+
+## LVGL Theme Switch physical demonstration
+
+`16_LVGL_ThemeSwitch` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- the LVGL shell rendered correctly in the initial Dark theme;
+- the Settings appearance control switched the running UI to Light theme;
+- repeated Light/Dark switching worked correctly;
+- `HOME / REMOTE / SETTINGS / INFO` remained usable after theme changes;
+- active-page highlighting remained visible in both themes;
+- live Device Info remained available after switching themes;
+- touch input and the physical backlight slider continued to operate;
+- no visible rendering corruption or instability was observed during the successful run.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
+
+This promotes `16_LVGL_ThemeSwitch` to **PHYSICAL PASS** for the named Panlee specimen and includes it in the Web Flasher catalog. Theme persistence across reboot is not claimed by this example.
 
 ## Validated LCD mapping
 
