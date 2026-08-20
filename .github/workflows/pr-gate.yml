@@ -1,0 +1,47 @@
+name: PR Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# This workflow is the single merge-facing status for pull requests to main.
+jobs:
+  platformio:
+    name: PlatformIO
+    uses: ./.github/workflows/platformio.yml
+
+  arduino-bsp:
+    name: Arduino BSP
+    uses: ./.github/workflows/arduino-bsp.yml
+
+  web-flasher:
+    name: Web Flasher
+    uses: ./.github/workflows/web-flasher.yml
+
+  gate:
+    name: Required PR Gate
+    if: always()
+    needs:
+      - platformio
+      - arduino-bsp
+      - web-flasher
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all validation workflows
+        env:
+          PLATFORMIO_RESULT: ${{ needs.platformio.result }}
+          ARDUINO_RESULT: ${{ needs.arduino-bsp.result }}
+          WEB_FLASHER_RESULT: ${{ needs.web-flasher.result }}
+        run: |
+          echo "PlatformIO:  ${PLATFORMIO_RESULT}"
+          echo "Arduino BSP: ${ARDUINO_RESULT}"
+          echo "Web Flasher: ${WEB_FLASHER_RESULT}"
+
+          test "${PLATFORMIO_RESULT}" = "success"
+          test "${ARDUINO_RESULT}" = "success"
+          test "${WEB_FLASHER_RESULT}" = "success"
+
+          echo "All required PR validations passed."

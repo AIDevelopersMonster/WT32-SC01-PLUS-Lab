@@ -1,12 +1,7 @@
 name: Web Flasher
 
 on:
-  pull_request:
-    paths:
-      - 'libraries/WT32_SC01_PLUS/**'
-      - 'web-flasher/**'
-      - 'tools/prepare_web_flasher.py'
-      - '.github/workflows/web-flasher.yml'
+  workflow_call:
   push:
     branches: [main]
     paths:
@@ -14,6 +9,7 @@ on:
       - 'web-flasher/**'
       - 'tools/prepare_web_flasher.py'
       - '.github/workflows/web-flasher.yml'
+      - '.github/workflows/pr-gate.yml'
   workflow_dispatch:
 
 permissions:
