@@ -68,6 +68,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 14_LVGL_NavigationShell
 15_LVGL_DeviceInfo
 16_LVGL_ThemeSwitch
+17_LVGL_SettingsPersistence
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -83,6 +84,8 @@ The library contains the diagnostic set plus compact application-level demonstra
 `15_LVGL_DeviceInfo` keeps the validated navigation shell and turns the INFO page into a live runtime diagnostic screen. It reports ESP32-S3 model/revision/cores/CPU frequency, Arduino and ESP-IDF versions, Flash, PSRAM, heap, sketch/free-slot space, uptime and touch-controller identity. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/15_LVGL_DeviceInfo/README.md`](examples/15_LVGL_DeviceInfo/README.md).
 
 `16_LVGL_ThemeSwitch` adds a centralized runtime Light/Dark appearance layer to the validated LVGL shell while retaining navigation, live Device Info, touch input and physical backlight control. Theme changes are applied safely through deferred LVGL page rebuilds. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/16_LVGL_ThemeSwitch/README.md`](examples/16_LVGL_ThemeSwitch/README.md).
+
+`17_LVGL_SettingsPersistence` extends the validated theme layer with non-volatile UI settings. It stores the selected Light/Dark theme and backlight brightness in ESP32 NVS through Arduino `Preferences`, debounces brightness writes, and restores both values after restart or power cycle. This persistence behavior has been physically validated on the reference Panlee specimen and the example is included in the Web Flasher catalog. See [`examples/17_LVGL_SettingsPersistence/README.md`](examples/17_LVGL_SettingsPersistence/README.md).
 
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
@@ -120,6 +123,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | LVGL Navigation Shell | **PHYSICAL PASS** | Four-page persistent navigation shell, touch page switching, active-page highlighting, remote placeholders and Settings backlight control physically exercised on Panlee V15 / 230208 |
 | LVGL Device Info | **PHYSICAL PASS** | Live ESP32-S3 runtime information, Flash/PSRAM/heap/sketch/uptime and touch-controller data displayed on the validated navigation shell |
 | LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208; Web Flasher catalogued |
+| LVGL Settings Persistence | **PHYSICAL PASS** | Theme and backlight brightness persisted through ESP32 NVS/Preferences and restored after restart/power cycle on Panlee V15 / 230208; Web Flasher catalogued |
 
 ## RainbowTouch physical demonstration
 
@@ -211,6 +215,23 @@ Video evidence:
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
 
 This promotes `16_LVGL_ThemeSwitch` to **PHYSICAL PASS** for the named Panlee specimen and includes it in the Web Flasher catalog. Theme persistence across reboot is not claimed by this example.
+
+## LVGL Settings Persistence physical demonstration
+
+`17_LVGL_SettingsPersistence` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- Light/Dark theme switching remained operational;
+- a non-default brightness value could be selected and saved;
+- brightness writes were delayed so slider movement did not write NVS on every step;
+- the selected theme and brightness survived restart/power cycle;
+- both values were restored automatically at boot;
+- Settings controls reflected the restored values;
+- repeated storage/restoration with a second settings combination worked normally;
+- `HOME / REMOTE / SETTINGS / INFO` navigation and live Device Info remained operational after restoration.
+
+This promotes `17_LVGL_SettingsPersistence` to **PHYSICAL PASS** for persistence of the declared theme and brightness settings on the named Panlee specimen and includes it in the Web Flasher catalog.
 
 ## Validated LCD mapping
 
