@@ -16,16 +16,22 @@ jobs:
           arduino-cli core install esp32:esp32@3.3.8 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
       - name: Install example dependencies
         run: arduino-cli lib install "lvgl@8.3.11"
-      - name: Compile all Arduino examples
+      - name: Compile Arduino examples 01-17
         run: |
           for example in \
             01_DisplayTest 02_TouchTest 03_StorageTest 04_SDDestructiveTest 05_AudioTest \
             06_RS485Test 07_IOTest 08_WiFiTest 09_BLETest 10_TestConsole 11_RainbowTouch \
             12_RetroClock 13_LVGL_BasicUI 14_LVGL_NavigationShell 15_LVGL_DeviceInfo \
-            16_LVGL_ThemeSwitch 17_LVGL_SettingsPersistence 18_LVGL_QR_Lifecycle; do
+            16_LVGL_ThemeSwitch 17_LVGL_SettingsPersistence; do
             echo "Compiling $example"
             arduino-cli compile \
               --fqbn esp32:esp32:esp32s3 \
               --library libraries/WT32_SC01_PLUS \
               "libraries/WT32_SC01_PLUS/examples/$example"
           done
+      - name: Compile QR lifecycle with Panlee QSPI PSRAM
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/18_LVGL_QR_Lifecycle
