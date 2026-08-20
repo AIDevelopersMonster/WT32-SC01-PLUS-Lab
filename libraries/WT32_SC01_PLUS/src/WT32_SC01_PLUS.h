@@ -8,6 +8,7 @@ public:
     bool begin();
     void fillScreen(uint16_t rgb565);
     void fillRect(int x, int y, int w, int h, uint16_t rgb565);
+    bool drawRGB565(int x, int y, int w, int h, const uint16_t *pixels);
     void drawTestPattern();
     int width() const { return wt32sc01plus::pins::LCD_WIDTH; }
     int height() const { return wt32sc01plus::pins::LCD_HEIGHT; }
@@ -15,6 +16,7 @@ public:
 private:
     void *bus_ = nullptr;
     void *io_ = nullptr;
+    void *transferDone_ = nullptr;
     uint16_t *lineBuffer_ = nullptr;
     bool ready_ = false;
 

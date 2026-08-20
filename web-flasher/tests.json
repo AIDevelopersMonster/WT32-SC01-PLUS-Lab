@@ -67,6 +67,12 @@
       "sketch": "12_RetroClock",
       "label": "Retro Clock + Web Setup",
       "description": "End-user demo: first-boot setup AP and captive portal, home Wi-Fi provisioning, city/timezone selection, NTP synchronization, local setup page, and a large seven-segment clock with date."
+    },
+    {
+      "id": "lvgl-basic-ui",
+      "sketch": "13_LVGL_BasicUI",
+      "label": "LVGL Basic UI",
+      "description": "Interactive LVGL 8 demo using the WT32_SC01_PLUS BSP for display, touch and backlight: button events, press counter and brightness slider without application-level pin configuration."
     }
   ]
 }

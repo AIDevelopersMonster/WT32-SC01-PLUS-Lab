@@ -37,6 +37,9 @@ jobs:
           arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core install esp32:esp32@3.3.8 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 
+      - name: Install Web Flasher example dependencies
+        run: arduino-cli lib install "lvgl@8.3.11"
+
       - name: Build Web Flasher test firmware
         shell: bash
         run: |
