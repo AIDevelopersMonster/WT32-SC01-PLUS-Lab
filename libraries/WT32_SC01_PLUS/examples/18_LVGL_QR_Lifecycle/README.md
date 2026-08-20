@@ -87,7 +87,7 @@ The service name and PoP are deterministically derived from the ESP32-S3 eFuse M
 
 ## PSRAM requirement
 
-The physical log from the failed run also showed:
+The physical log from the failed BLE run also showed:
 
 ```text
 octal_psram: PSRAM chip is not connected, or wrong PSRAM line mode
@@ -102,13 +102,16 @@ Board:  ESP32S3 Dev Module
 PSRAM:  QSPI PSRAM
 ```
 
-The example now contains a compile-time guard requiring the QSPI/QUAD PSRAM configuration. Repository CI compiles example 18 separately with:
+The example contains a compile-time guard requiring the QSPI/QUAD PSRAM configuration. Repository CI compiles example 18 with the Panlee QSPI PSRAM profile.
+
+The successful physical run reported:
 
 ```text
-esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M
+BUILD: Espressif SoftAP QR provisioning / QSPI PSRAM
+PSRAM: 2 MiB, free 2044 KiB
 ```
 
-This prevents the previously observed OPI/Octal mismatch from being silently accepted.
+The earlier Octal/OPI initialization failure and BLE-controller reboot loop were no longer present.
 
 ## QR lifecycle
 
@@ -126,11 +129,13 @@ When the station obtains an IP address, the same QR object changes from the prov
 https://github.com/AIDevelopersMonster/WT32-SC01-PLUS-Lab
 ```
 
-So the reusable pattern remains:
+So the reusable pattern is physically demonstrated as:
 
 ```text
 PROVISIONING QR -> CONNECTED INFORMATION QR
 ```
+
+The connected-state GitHub QR was successfully decoded during the physical test. Compatibility with arbitrary third-party barcode/QR scanner applications is not a PASS requirement; the provisioning QR is qualified against the Espressif provisioning application, while generic scanners may vary in camera, focus and QR decoding behavior.
 
 ## Retained HMI features
 
@@ -175,62 +180,81 @@ WiFiProv (included with Arduino-ESP32)
 ## Current status
 
 ```text
-SOURCE CORRECTED AFTER PHYSICAL FAIL
+SOURCE COMPLETE
 CI TARGET ADDED WITH QSPI PSRAM PROFILE
-BLE TRANSPORT: PHYSICAL FAIL ON ARDUINO-ESP32 3.3.8 / ESP32-S3
-SOFTAP QR TRANSPORT: PHYSICAL VALIDATION REQUIRED
-WEB FLASHER: NOT YET ELIGIBLE
+SOFTAP QR PROVISIONING: PHYSICAL PASS
+SECURITY 1 / PoP: PHYSICAL PASS
+WI-FI CREDENTIAL DELIVERY: PHYSICAL PASS
+WI-FI CONNECTION + IP: PHYSICAL PASS
+QR -> GITHUB INFO URL: PHYSICAL PASS
+RESET + REPROVISION: PHYSICAL PASS
+WEB FLASHER CATALOGUED
 ```
 
-## Physical validation checklist for corrected build
+The earlier BLE transport experiment remains recorded separately as a **PHYSICAL FAIL** on the tested Arduino-ESP32 3.3.8 / ESP32-S3 configuration. It does not reduce the PASS status of the corrected SoftAP implementation.
 
-1. In Arduino IDE select **ESP32S3 Dev Module** and **QSPI PSRAM**.
-2. Flash the corrected `18_LVGL_QR_Lifecycle`.
-3. Confirm boot log no longer reports `octal_psram` initialization failure.
-4. Confirm Serial prints:
+## Physical validation record
 
-```text
-BUILD: Espressif SoftAP QR provisioning / QSPI PSRAM
-PSRAM: 2 MiB, free ... KiB
-PROV: starting Espressif SoftAP provisioning manager
-PROV EVENT: START (SOFTAP)
-```
+The corrected build was physically exercised on the reference Panlee specimen on **2026-08-20**.
 
-5. Confirm the display remains stable with no reboot loop or synchronized speaker click.
-6. Confirm HOME changes to `ESPRESSIF QR PROVISIONING` and displays a clean QR.
-7. Open a compatible Espressif provisioning application on the phone.
-8. Scan the QR from the physical display.
-9. Confirm the app recognizes the device using the embedded service name / PoP.
-10. Select a real 2.4 GHz Wi-Fi network and provide its password.
-11. Confirm Serial reports credential reception and success.
-12. Confirm the board obtains a station IP address.
-13. Confirm HOME changes to `DEVICE ONLINE`.
-14. Confirm the QR changes to the repository/project information URL.
-15. Reboot without clearing Wi-Fi and confirm reconnection.
-16. Use `RESET WIFI + REBOOT` and confirm QR onboarding starts again.
-17. Confirm theme/brightness persistence and navigation still operate.
-
-Useful markers:
+Observed successful sequence included:
 
 ```text
 WT32-SC01-PLUS 18_LVGL_QR_Lifecycle
 BUILD: Espressif SoftAP QR provisioning / QSPI PSRAM
-PROV SERVICE: PROV_xxxxxx
-PROV QR PAYLOAD: {"ver":"v1",..."transport":"softap"}
+PROV SERVICE: PROV_E22748
+PROV QR PAYLOAD: {"ver":"v1","name":"PROV_E22748","pop":"60737111","transport":"softap"}
+PSRAM: 2 MiB, free 2044 KiB
+PROV: starting Espressif SoftAP provisioning manager
 PROV EVENT: START (SOFTAP)
-PROV EVENT: CREDENTIALS RECEIVED
-PROV EVENT: CREDENTIALS SUCCESS
-WIFI: CONNECTED x.x.x.x
-UI NETWORK STATE: CONNECTED
 READY: Espressif SoftAP QR lifecycle initialized
+UI NETWORK STATE: PROVISIONING
+PROV EVENT: CREDENTIALS RECEIVED
+WIFI: CONNECTED 10.14.98.252
+PROV EVENT: CREDENTIALS SUCCESS
 ```
+
+The physical test confirmed:
+
+- stable boot with the correct 2 MiB QSPI PSRAM configuration;
+- provisioning QR rendered on the physical 480x320 display;
+- phone-driven Espressif QR onboarding;
+- SoftAP provisioning transport;
+- Security 1 / Proof of Possession exchange;
+- Wi-Fi credential delivery to the ESP32-S3;
+- successful station association and IP acquisition;
+- transition from provisioning QR to the GitHub/project information QR;
+- successful decoding of the connected-state GitHub URL;
+- `HOME / REMOTE / SETTINGS / INFO` navigation remained operational;
+- `RESET WIFI + REBOOT` erased Wi-Fi credentials and started a fresh provisioning cycle;
+- the second provisioning cycle again accepted credentials and reconnected successfully;
+- no Guru Meditation or reset loop occurred in the corrected SoftAP run.
+
+### Video evidence
+
+- [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
+
+## Web Flasher
+
+The corrected example is physically validated and included in the repository Web Flasher catalog. The Web Flasher build uses the Panlee QSPI PSRAM / 16 MiB Flash compile profile required by this example.
 
 ## Claim boundary
 
-The initial BLE implementation is **not a PASS**. It physically failed during BLE-controller startup on the tested Arduino-ESP32 3.3.8 configuration.
+The physical PASS certifies the corrected **Espressif SoftAP QR provisioning lifecycle** on the named Panlee `ZX3D50CE08S-V15-USRC / 230208` specimen:
 
-A PASS for the corrected example requires successful phone-driven QR provisioning through the Espressif SoftAP transport on the named Panlee specimen.
+- QR-driven onboarding through a compatible Espressif provisioning application;
+- Security 1 / PoP provisioning;
+- credential delivery;
+- station connection and IP acquisition;
+- transition to the project information QR;
+- reset and repeat provisioning.
 
-A visible QR alone, successful compilation, or manual Wi-Fi configuration is not sufficient.
+It does not certify:
 
-After the corrected full phone-driven flow passes, the example becomes eligible for the main README and Web Flasher catalog.
+- the earlier BLE transport implementation;
+- every Android/iOS device or every third-party QR/barcode scanner;
+- enterprise Wi-Fi;
+- production PoP/key-management policy;
+- arbitrary QR payload compatibility;
+- captive portal behavior;
+- OTA behavior.
