@@ -73,6 +73,12 @@
       "sketch": "13_LVGL_BasicUI",
       "label": "LVGL Basic UI",
       "description": "Interactive LVGL 8 demo using the WT32_SC01_PLUS BSP for display, touch and backlight: button events, press counter and brightness slider without application-level pin configuration."
+    },
+    {
+      "id": "lvgl-navigation-shell",
+      "sketch": "14_LVGL_NavigationShell",
+      "label": "LVGL Navigation Shell",
+      "description": "Physically validated four-page LVGL HMI shell with persistent HOME/REMOTE/SETTINGS/INFO navigation, touch page switching, active-page highlighting, remote command placeholders and hardware backlight control."
     }
   ]
 }
