@@ -132,13 +132,39 @@ WT32_SC01_PLUS BSP
 ```text
 SOURCE COMPLETE
 CI TARGET ADDED
-PHYSICAL VALIDATION REQUIRED
-WEB FLASHER: NOT YET ELIGIBLE
+DISPLAY 0/90/180/270: PHYSICAL PASS
+TOUCH 0/90/180/270: PHYSICAL PASS
+NAVIGATION / QR / THEME / BACKLIGHT: PHYSICAL PASS
+ORIENTATION NVS RESTORE: PHYSICAL PASS
+WEB FLASHER: CATALOGUED
 ```
+
+## Physical validation record
+
+The example was physically exercised on the reference Panlee specimen on **2026-08-20**.
+
+The successful demonstration confirmed:
+
+- runtime display rotation through `0 / 90 / 180 / 270` degrees;
+- expected LVGL logical geometry (`480x320` landscape and `320x480` portrait);
+- touch hit-testing remained aligned with the rotated UI;
+- the `TL / TR / CENTER / BL / BR` validation targets operated in all four orientations;
+- no additional application-level touch transform was required beyond the native BSP mapping plus LVGL rotation;
+- `TEST / QR / SET / INFO` navigation remained usable after rotation;
+- the project QR retained correct square geometry and remained usable;
+- Light/Dark theme switching continued to operate;
+- the physical backlight slider remained touch-aligned;
+- orientation, theme and brightness persistence through `Preferences` / NVS remained operational;
+- the saved orientation was restored after restart;
+- repeated orientation changes showed no observed panic, reset loop or rendering corruption during the successful run.
+
+### Video evidence
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL four-orientation display/touch validation](https://youtube.com/shorts/ttZOVsNHwy4)
 
 ## Physical validation checklist
 
-For each of the four orientations:
+The validation gate used for this example is:
 
 1. Confirm the whole UI is visible and fills the expected logical screen.
 2. Confirm header reports the expected resolution.
@@ -154,20 +180,15 @@ For each of the four orientations:
 12. Confirm Light/Dark switching works.
 13. Confirm the brightness slider remains touch-aligned and changes physical backlight.
 14. Confirm INFO reports the correct logical resolution.
-15. Repeat several orientation changes in different orders and confirm no rendering corruption, panic or stuck touch.
+15. Repeat orientation changes in different orders and confirm no rendering corruption, panic or stuck touch.
+16. Reboot and verify that the saved orientation, theme and brightness are restored correctly.
 
-After all four orientations pass, reboot and verify that the saved orientation, theme and brightness are restored correctly.
-
-## PASS gate
-
-A compile success or visually rotated display is not sufficient.
-
-Physical PASS requires all of the following on the named Panlee specimen:
+## PASS result
 
 ```text
 DISPLAY 0/90/180/270          PASS
 LOGICAL RESOLUTION            PASS
-TOUCH TL/TR/CENTER/BL/BR      5/5 IN ALL FOUR ORIENTATIONS
+TOUCH TL/TR/CENTER/BL/BR      PASS IN ALL FOUR ORIENTATIONS
 NAVIGATION                    PASS
 QR GEOMETRY / DECODING        PASS
 THEME                         PASS
@@ -176,4 +197,6 @@ ORIENTATION NVS RESTORE       PASS
 NO PANIC / RESET / CORRUPTION PASS
 ```
 
-Only after this physical gate passes should the orientation logic be considered for promotion into a reusable BSP-level API and the example be added to the main README / Web Flasher catalog.
+The physical PASS is specimen-scoped to the named Panlee `ZX3D50CE08S-V15-USRC / 230208` board. It does not by itself certify other WT32-SC01-PLUS OEM revisions.
+
+The example is now eligible for the main library README and Web Flasher catalog. Promotion of orientation behavior into a reusable BSP-level API remains a separate design step.
