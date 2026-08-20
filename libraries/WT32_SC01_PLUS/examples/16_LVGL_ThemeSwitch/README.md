@@ -62,7 +62,7 @@ LVGL 8.3.11
 SOURCE COMPLETE
 CI TARGET ADDED
 PHYSICAL PASS
-WEB FLASHER: ELIGIBLE, NOT YET CATALOGUED
+WEB FLASHER CATALOGUED
 ```
 
 Physical validation was completed on the reference Panlee specimen on **2026-08-20**.
@@ -94,9 +94,13 @@ THEME: DARK
 READY: LVGL theme switch initialized
 ```
 
+## Video evidence
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
+
 ## Web Flasher
 
-The example is non-destructive and has now passed physical validation, so it is eligible for the repository Web Flasher catalog. It is intentionally not marked as catalogued until the Web Flasher manifest list is updated separately.
+The example is physically validated, non-destructive and included in the repository Web Flasher catalog. The Web Flasher workflow installs `lvgl@8.3.11`, builds the example and generates its ESP Web Tools manifest automatically.
 
 ## Claim boundary
 
