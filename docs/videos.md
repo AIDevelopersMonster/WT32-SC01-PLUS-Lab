@@ -13,6 +13,7 @@ The videos are demonstrations of specific experiments. Hardware conclusions rema
 
 ## Display / touch / LVGL
 
+- [WT32-SC01-PLUS + LVGL: поворот экрана 0/90/180/270° и корректный Touch](https://youtube.com/shorts/ttZOVsNHwy4)
 - [WT32-SC01-PLUS: LVGL + Touch заработали! ESP32-S3, ST7796 и FT6336U](https://youtube.com/shorts/ZnK9qvZnujg)
 - [ChatGPT калибрует тачскрин WT32-SC01-PLUS 🔧 ESP32-S3 + FT6336U](https://youtube.com/shorts/-G_gq_CHcp4)
 - [Запустили дисплей WT32-SC01-PLUS в ESP-IDF 🔥 ST7796 работает!](https://youtube.com/shorts/8Ec1ZflBbhY)
