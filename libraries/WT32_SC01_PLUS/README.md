@@ -69,6 +69,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 15_LVGL_DeviceInfo
 16_LVGL_ThemeSwitch
 17_LVGL_SettingsPersistence
+18_LVGL_QR_Lifecycle
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -87,6 +88,8 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `17_LVGL_SettingsPersistence` extends the validated theme layer with non-volatile UI settings. It stores the selected Light/Dark theme and backlight brightness in ESP32 NVS through Arduino `Preferences`, debounces brightness writes, and restores both values after restart or power cycle. This persistence behavior has been physically validated on the reference Panlee specimen and the example is included in the Web Flasher catalog. See [`examples/17_LVGL_SettingsPersistence/README.md`](examples/17_LVGL_SettingsPersistence/README.md).
 
+`18_LVGL_QR_Lifecycle` adds the physically validated Espressif QR-driven onboarding flow. It renders an Espressif SoftAP provisioning QR on the LVGL HOME page, uses Security 1 / Proof of Possession with the official provisioning protocol, accepts Wi-Fi credentials from the phone application, joins the target network, then changes the same QR area into a GitHub/project information QR. `RESET WIFI + REBOOT` allows the complete onboarding sequence to be repeated. The validated build uses the Panlee 2 MiB QSPI PSRAM profile and is included in the Web Flasher catalog. See [`examples/18_LVGL_QR_Lifecycle/README.md`](examples/18_LVGL_QR_Lifecycle/README.md).
+
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
 Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stored.
@@ -98,6 +101,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Device Info](https://youtube.com/shorts/vlxDE6bILbU)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
+- [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
 
 ## v0.1 status
 
@@ -124,6 +128,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | LVGL Device Info | **PHYSICAL PASS** | Live ESP32-S3 runtime information, Flash/PSRAM/heap/sketch/uptime and touch-controller data displayed on the validated navigation shell |
 | LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208; Web Flasher catalogued |
 | LVGL Settings Persistence | **PHYSICAL PASS** | Theme and backlight brightness persisted through ESP32 NVS/Preferences and restored after restart/power cycle on Panlee V15 / 230208; Web Flasher catalogued |
+| LVGL QR Lifecycle | **PHYSICAL PASS** | Espressif SoftAP QR provisioning, Security 1/PoP, credential delivery, Wi-Fi/IP, GitHub info QR transition and reset/reprovision physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
 
 ## RainbowTouch physical demonstration
 
@@ -232,6 +237,31 @@ Observed behavior:
 - `HOME / REMOTE / SETTINGS / INFO` navigation and live Device Info remained operational after restoration.
 
 This promotes `17_LVGL_SettingsPersistence` to **PHYSICAL PASS** for persistence of the declared theme and brightness settings on the named Panlee specimen and includes it in the Web Flasher catalog.
+
+## LVGL QR Lifecycle physical demonstration
+
+`18_LVGL_QR_Lifecycle` was physically exercised on the reference Panlee specimen on 2026-08-20 using the corrected Espressif **SoftAP** provisioning transport and the Panlee **2 MiB QSPI PSRAM** build profile.
+
+Observed behavior:
+
+- the firmware booted stably with 2 MiB QSPI PSRAM detected;
+- the Espressif provisioning QR rendered on the physical LCD;
+- the phone provisioning application accepted the QR identity and PoP;
+- Security 1 provisioning completed;
+- Wi-Fi credentials were delivered to the ESP32-S3;
+- the station connected and obtained an IP address;
+- the HOME QR transitioned from provisioning payload to the project GitHub URL;
+- the GitHub information QR was decoded successfully during the demonstration;
+- `HOME / REMOTE / SETTINGS / INFO` navigation remained operational;
+- `RESET WIFI + REBOOT` erased saved Wi-Fi credentials and restarted onboarding;
+- the subsequent provisioning cycle again accepted credentials and reconnected;
+- the corrected SoftAP build showed no Guru Meditation or reboot loop.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
+
+This promotes `18_LVGL_QR_Lifecycle` to **PHYSICAL PASS** for the corrected Espressif SoftAP QR lifecycle on the named Panlee specimen and includes it in the Web Flasher catalog. The earlier BLE-controller startup failure remains documented in the example README as a separate failed transport experiment.
 
 ## Validated LCD mapping
 
