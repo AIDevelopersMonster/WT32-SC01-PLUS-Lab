@@ -91,6 +91,12 @@
       "sketch": "16_LVGL_ThemeSwitch",
       "label": "LVGL Theme Switch",
       "description": "Physically validated LVGL HMI demo with runtime Dark/Light theme switching, theme-aware navigation and pages, live Device Info continuity and physical backlight control."
+    },
+    {
+      "id": "lvgl-settings-persistence",
+      "sketch": "17_LVGL_SettingsPersistence",
+      "label": "LVGL Settings Persistence",
+      "description": "Physically validated LVGL HMI demo that stores Dark/Light theme and backlight brightness in ESP32 NVS via Preferences and restores both settings after restart or power cycle."
     }
   ]
 }
