@@ -35,7 +35,25 @@ ST7796 480x320 I80
 FT6336U-compatible touch
 ```
 
-The example source is available before physical validation, but its hardware status must remain **NOT YET PHYSICALLY VALIDATED** until it is actually flashed and exercised on the reference specimen.
+## Physical validation status
+
+### First run — 2026-08-20
+
+Observed on the reference Panlee specimen:
+
+| Item | Result |
+|---|---|
+| LVGL graphics/rendering | **PHYSICAL PASS** |
+| Screen layout | **PHYSICAL PASS** |
+| Touch interaction | **FAIL** |
+| Button event | NOT TESTED because touch failed |
+| Backlight slider | NOT TESTED because touch failed |
+
+The failure was traced to the example initialization sequence, not to a newly observed hardware failure. `WT32_SC01_PLUS::begin()` initializes display and backlight only; touch is intentionally initialized separately by `board.touch().begin()`. The first revision of this example omitted that call even though previously validated touch examples such as `11_RainbowTouch` include it.
+
+The example has now been corrected to initialize touch explicitly before registering the LVGL pointer input driver. It also prints the detected touch-controller identifiers to Serial before starting the UI.
+
+**Current status:** graphics physically passed; corrected touch path requires one repeat physical run before the example can be promoted to full PHYSICAL PASS.
 
 ## Expected UI
 
@@ -46,7 +64,7 @@ The screen contains:
 - live `Button presses` counter;
 - `Backlight` slider from 10% to 100%.
 
-A successful physical run should confirm display rendering, touch-to-LVGL coordinate mapping, button events, slider interaction, and visible backlight level changes.
+A successful repeat physical run should confirm display rendering, touch-to-LVGL coordinate mapping, button events, slider interaction, and visible backlight level changes.
 
 ## Why this example exists
 
