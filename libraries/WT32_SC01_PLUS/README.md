@@ -66,7 +66,7 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `12_RetroClock` demonstrates a complete no-IDE product path: install from the browser Web Flasher, configure the board through its temporary Wi-Fi AP and local web page, select city/timezone, synchronize from NTP, and run a seven-segment clock with date. See [`examples/12_RetroClock/README.md`](examples/12_RetroClock/README.md).
 
-`13_LVGL_BasicUI` is the first generic LVGL application example. It connects LVGL 8 rendering and pointer input to the BSP, then demonstrates a clickable button, live event counter and brightness slider. It requires `lvgl@8.3.11`; repository CI and the Web Flasher install that version automatically. See [`examples/13_LVGL_BasicUI/README.md`](examples/13_LVGL_BasicUI/README.md).
+`13_LVGL_BasicUI` is the first generic LVGL application example. It connects LVGL 8 rendering and pointer input to the BSP, then demonstrates a clickable button, live event counter and brightness slider. It requires `lvgl@8.3.11`; repository CI and the Web Flasher install that version automatically. The corrected example has been physically validated on the reference Panlee specimen. See [`examples/13_LVGL_BasicUI/README.md`](examples/13_LVGL_BasicUI/README.md).
 
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
@@ -97,7 +97,7 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | Combined TestConsole | AVAILABLE | Modular CLI + touch-GUI launcher |
 | RainbowTouch demo | **PHYSICAL PASS** | Interactive BSP demo: touch painting and coordinate-mapped RGB565 trail physically observed on Panlee V15 / 230208 |
 | RetroClock demo | **PHYSICAL DEMONSTRATION AVAILABLE** | Web AP setup, Wi-Fi/NTP clock and seven-segment display shown on the reference specimen; full checklist remains separately tracked |
-| LVGL Basic UI | **SOURCE + CI TARGET; PHYSICAL VALIDATION PENDING** | LVGL 8 display/touch bridge, button events and BSP backlight slider |
+| LVGL Basic UI | **PHYSICAL PASS** | LVGL 8 rendering, touch pointer input, button events, live counter and backlight slider physically exercised on Panlee V15 / 230208 |
 
 ## RainbowTouch physical demonstration
 
@@ -112,6 +112,20 @@ Observed behavior:
 - drawing used only the BSP application API (`touch().read()` + `display().fillRect()`), with no LovyanGFX dependency in the sketch.
 
 This example is therefore promoted from source-only status to **PHYSICAL PASS** for the named specimen.
+
+## LVGL Basic UI physical demonstration
+
+`13_LVGL_BasicUI` was physically exercised on the reference Panlee specimen on 2026-08-20 after correcting the example initialization to call `board.touch().begin()` before LVGL pointer registration.
+
+Observed behavior:
+
+- LVGL UI rendered cleanly;
+- touch input operated through the BSP-to-LVGL pointer bridge;
+- repeated presses on `Tap me` advanced the live counter, including an observed 7 -> 8 transition;
+- the backlight slider tracked touch across multiple positions;
+- moving the slider produced visible brightness changes.
+
+The first run's no-touch result is retained in the example README as failure history and was traced to the omitted touch initialization call rather than a hardware defect.
 
 ## Validated LCD mapping
 
