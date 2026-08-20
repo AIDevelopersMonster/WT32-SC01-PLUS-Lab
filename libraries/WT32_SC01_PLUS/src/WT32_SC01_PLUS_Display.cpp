@@ -4,6 +4,8 @@
 #include <esp_heap_caps.h>
 #include <esp_lcd_io_i80.h>
 #include <esp_lcd_panel_io.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 namespace {
 constexpr size_t kLinePixels = wt32sc01plus::pins::LCD_WIDTH;
@@ -13,6 +15,17 @@ static uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
     return static_cast<uint16_t>(((r & 0xF8U) << 8) |
                                  ((g & 0xFCU) << 3) |
                                  (b >> 3));
+}
+
+static bool onColorTransferDone(esp_lcd_panel_io_handle_t,
+                                esp_lcd_panel_io_event_data_t *,
+                                void *userCtx) {
+    auto semaphore = static_cast<SemaphoreHandle_t>(userCtx);
+    if (!semaphore) return false;
+
+    BaseType_t higherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(semaphore, &higherPriorityTaskWoken);
+    return higherPriorityTaskWoken == pdTRUE;
 }
 }
 
@@ -35,9 +48,16 @@ bool WT32_SC01_PLUS_Display::setWindow(int x0, int y0, int x1, int y1) {
 }
 
 bool WT32_SC01_PLUS_Display::pushPixels(const uint16_t *pixels, size_t count) {
-    if (!io_ || !pixels || count == 0) return false;
+    if (!io_ || !transferDone_ || !pixels || count == 0) return false;
+
     auto io = static_cast<esp_lcd_panel_io_handle_t>(io_);
-    return esp_lcd_panel_io_tx_color(io, 0x2C, pixels, count * sizeof(uint16_t)) == ESP_OK;
+    auto semaphore = static_cast<SemaphoreHandle_t>(transferDone_);
+
+    if (esp_lcd_panel_io_tx_color(io, 0x2C, pixels, count * sizeof(uint16_t)) != ESP_OK) {
+        return false;
+    }
+
+    return xSemaphoreTake(semaphore, portMAX_DELAY) == pdTRUE;
 }
 
 bool WT32_SC01_PLUS_Display::begin() {
@@ -70,10 +90,16 @@ bool WT32_SC01_PLUS_Display::begin() {
     if (esp_lcd_new_i80_bus(&busConfig, &bus) != ESP_OK) return false;
     bus_ = bus;
 
+    auto semaphore = xSemaphoreCreateBinary();
+    if (!semaphore) return false;
+    transferDone_ = semaphore;
+
     esp_lcd_panel_io_i80_config_t ioConfig{};
     ioConfig.cs_gpio_num = wt32sc01plus::pins::LCD_CS;
     ioConfig.pclk_hz = wt32sc01plus::pins::LCD_PCLK_HZ;
-    ioConfig.trans_queue_depth = 2;
+    ioConfig.trans_queue_depth = 1;
+    ioConfig.on_color_trans_done = onColorTransferDone;
+    ioConfig.user_ctx = transferDone_;
     ioConfig.dc_levels.dc_idle_level = 0;
     ioConfig.dc_levels.dc_cmd_level = 0;
     ioConfig.dc_levels.dc_dummy_level = 0;
@@ -141,6 +167,23 @@ void WT32_SC01_PLUS_Display::fillRect(int x, int y, int w, int h, uint16_t color
         if (!pushPixels(lineBuffer_, count)) return;
     }
     command(0x00);
+}
+
+bool WT32_SC01_PLUS_Display::drawRGB565(int x, int y, int w, int h, const uint16_t *pixels) {
+    if (!ready_ || !pixels || w <= 0 || h <= 0) return false;
+    if (x < 0 || y < 0 || x + w > width() || y + h > height()) return false;
+    if (w > static_cast<int>(kLinePixels)) return false;
+
+    for (int row = 0; row < h; ++row) {
+        if (!setWindow(x, y + row, x + w - 1, y + row)) return false;
+        if (!pushPixels(pixels + static_cast<size_t>(row) * static_cast<size_t>(w),
+                        static_cast<size_t>(w))) {
+            return false;
+        }
+    }
+
+    command(0x00);
+    return true;
 }
 
 void WT32_SC01_PLUS_Display::drawTestPattern() {
