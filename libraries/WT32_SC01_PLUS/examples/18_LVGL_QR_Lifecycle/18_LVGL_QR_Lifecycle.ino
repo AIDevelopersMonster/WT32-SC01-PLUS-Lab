@@ -6,14 +6,18 @@
  *   Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC / 230208
  *
  * Purpose:
- *   Demonstrate an Espressif provisioning QR lifecycle:
- *   - before Wi-Fi configuration: BLE provisioning QR for the official
- *     Espressif provisioning client;
+ *   Demonstrate the official Espressif QR-driven provisioning protocol:
+ *   - before Wi-Fi configuration: SoftAP provisioning QR for the Espressif app;
  *   - after Wi-Fi connection: the same QR area becomes an information URL.
  *
  * Dependencies:
  *   LVGL 8.3.11 with LV_USE_QRCODE=1
  *   Arduino-ESP32 WiFiProv
+ *
+ * Important:
+ *   Panlee V15 uses QSPI PSRAM. Select Tools -> PSRAM -> QSPI PSRAM.
+ *   BLE provisioning is intentionally not used here because Arduino-ESP32
+ *   3.3.7/3.3.8 has a reproducible ESP32-S3 BLE-controller startup regression.
  *
  * Status: SOURCE / CI TARGET. Physical validation required before PASS.
  */
@@ -24,6 +28,15 @@
 #include <WiFiProv.h>
 #include <Preferences.h>
 #include <esp_system.h>
+#include "sdkconfig.h"
+
+#ifndef BOARD_HAS_PSRAM
+#error "Panlee WT32-SC01-PLUS requires Tools -> PSRAM -> QSPI PSRAM for example 18"
+#endif
+
+#if !defined(CONFIG_SPIRAM_MODE_QUAD)
+#error "Wrong PSRAM mode: select Tools -> PSRAM -> QSPI PSRAM, not OPI PSRAM"
+#endif
 
 WT32_SC01_PLUS board;
 Preferences preferences;
@@ -44,12 +57,6 @@ constexpr const char *kLandingUrl = "https://github.com/AIDevelopersMonster/WT32
 constexpr size_t kServiceNameSize = 24;
 constexpr size_t kPopSize = 12;
 constexpr size_t kQrPayloadSize = 192;
-
-// Standard 128-bit BLE provisioning UUID from the Arduino-ESP32 WiFiProv example.
-uint8_t provisioningUuid[16] = {
-    0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf,
-    0xea, 0x4a, 0x82, 0x03, 0x04, 0x90, 0x1a, 0x02,
-};
 
 enum class PageId : uint8_t {
     Home = 0,
@@ -117,6 +124,7 @@ static uint32_t brightnessChangedAtMs = 0;
 
 static volatile NetworkUiState pendingNetworkState = NetworkUiState::Starting;
 static volatile bool networkStateDirty = true;
+static volatile bool hadStationIp = false;
 static NetworkUiState currentNetworkState = NetworkUiState::Starting;
 
 static char serviceName[kServiceNameSize] = {0};
@@ -237,7 +245,7 @@ void makeProvisioningIdentity() {
     snprintf(serviceName, sizeof(serviceName), "PROV_%06lX", static_cast<unsigned long>(suffix));
     snprintf(proofOfPossession, sizeof(proofOfPossession), "%08lu", static_cast<unsigned long>(popNumber));
     snprintf(provisioningPayload, sizeof(provisioningPayload),
-             "{\"ver\":\"v1\",\"name\":\"%s\",\"pop\":\"%s\",\"transport\":\"ble\"}",
+             "{\"ver\":\"v1\",\"name\":\"%s\",\"pop\":\"%s\",\"transport\":\"softap\"}",
              serviceName, proofOfPossession);
 
     Serial.printf("PROV SERVICE: %s\n", serviceName);
@@ -253,7 +261,7 @@ void provisioningEvent(arduino_event_t *event) {
     // Runs from another FreeRTOS task. Do not call LVGL from here.
     switch (event->event_id) {
         case ARDUINO_EVENT_PROV_START:
-            Serial.println("PROV EVENT: START");
+            Serial.println("PROV EVENT: START (SOFTAP)");
             queueNetworkState(NetworkUiState::Provisioning);
             break;
 
@@ -276,14 +284,15 @@ void provisioningEvent(arduino_event_t *event) {
             IPAddress ip(event->event_info.got_ip.ip_info.ip.addr);
             snprintf(connectedIp, sizeof(connectedIp), "%u.%u.%u.%u",
                      ip[0], ip[1], ip[2], ip[3]);
+            hadStationIp = true;
             Serial.printf("WIFI: CONNECTED %s\n", connectedIp);
             queueNetworkState(NetworkUiState::Connected);
             break;
         }
 
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-            Serial.println("WIFI: DISCONNECTED");
-            if (currentNetworkState == NetworkUiState::Connected) {
+            if (hadStationIp) {
+                Serial.println("WIFI: DISCONNECTED - reconnecting");
                 queueNetworkState(NetworkUiState::Connecting);
             }
             break;
@@ -313,9 +322,9 @@ void updateQrArea() {
 
     switch (currentNetworkState) {
         case NetworkUiState::Provisioning:
-            lv_label_set_text(qrTitle, "ESPRESSIF BLE PROVISIONING");
-            lv_label_set_text_fmt(qrStatus, "Scan in ESP BLE Provisioning | %s", serviceName);
-            lv_label_set_text_fmt(qrDetail, "Security 1 / PoP embedded in QR");
+            lv_label_set_text(qrTitle, "ESPRESSIF QR PROVISIONING");
+            lv_label_set_text_fmt(qrStatus, "Scan in ESP Provisioning | %s", serviceName);
+            lv_label_set_text(qrDetail, "SoftAP transport / Security 1 / PoP in QR");
             payload = provisioningPayload;
             statusColor = theme().warning;
             break;
@@ -323,7 +332,7 @@ void updateQrArea() {
         case NetworkUiState::Connecting:
             lv_label_set_text(qrTitle, "CONNECTING TO WI-FI");
             lv_label_set_text(qrStatus, "Credentials received - waiting for station IP");
-            lv_label_set_text(qrDetail, "QR returns as information link after connection");
+            lv_label_set_text(qrDetail, "Provisioning channel may switch while STA connects");
             statusColor = theme().warning;
             break;
 
@@ -338,7 +347,7 @@ void updateQrArea() {
         case NetworkUiState::Failed:
             lv_label_set_text(qrTitle, "PROVISIONING FAILED");
             lv_label_set_text(qrStatus, "Check Wi-Fi credentials and retry");
-            lv_label_set_text(qrDetail, "Use SETTINGS -> RESET WIFI + REBOOT for a clean retry");
+            lv_label_set_text(qrDetail, "Use SETTINGS -> RESET WIFI + REBOOT for clean retry");
             payload = provisioningPayload;
             statusColor = theme().warning;
             break;
@@ -395,7 +404,7 @@ void buildHomePage() {
     lv_label_set_long_mode(hint, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(hint, 230);
     lv_label_set_text(hint,
-                      "Before Wi-Fi: scan QR in the Espressif app.\n\n"
+                      "Before Wi-Fi: scan QR in the Espressif provisioning app.\n\n"
                       "After Wi-Fi: same QR becomes a project/info link.");
     lv_obj_set_style_text_color(hint, lv_color_hex(theme().muted), 0);
     lv_obj_set_pos(hint, 6, 82);
@@ -459,7 +468,7 @@ void onBrightness(lv_event_t *event) {
 void onResetWiFi(lv_event_t *event) {
     if (lv_event_get_code(event) != LV_EVENT_CLICKED) return;
     Serial.println("WIFI RESET: erasing saved Wi-Fi credentials and rebooting");
-    lv_label_set_text(saveStateValue, "Wi-Fi credentials erased - rebooting...");
+    if (saveStateValue) lv_label_set_text(saveStateValue, "Wi-Fi erased - rebooting...");
     WiFi.disconnect(true, true);
     delay(600);
     ESP.restart();
@@ -496,7 +505,7 @@ void buildSettingsPage() {
     lv_obj_center(resetLabel);
 
     saveStateValue = makeMutedLabel(contentArea,
-                                    "Use reset to repeat QR onboarding from scratch.",
+                                    "Reset Wi-Fi to repeat QR onboarding.",
                                     245, 164);
     lv_obj_set_width(saveStateValue, 215);
 }
@@ -616,25 +625,20 @@ void buildNavigationShell() {
 }
 
 void startProvisioningLifecycle() {
-    WiFi.mode(WIFI_STA);
     WiFi.onEvent(provisioningEvent);
     WiFi.begin();
 
-#if (defined(CONFIG_BLUEDROID_ENABLED) || defined(CONFIG_NIMBLE_ENABLED)) && __has_include("esp_bt.h")
-    Serial.println("PROV: starting Espressif BLE provisioning manager");
+    Serial.println("PROV: starting Espressif SoftAP provisioning manager");
     WiFiProv.beginProvision(
-        NETWORK_PROV_SCHEME_BLE,
-        NETWORK_PROV_SCHEME_HANDLER_FREE_BLE,
+        NETWORK_PROV_SCHEME_SOFTAP,
+        NETWORK_PROV_SCHEME_HANDLER_NONE,
         NETWORK_PROV_SECURITY_1,
         proofOfPossession,
         serviceName,
         nullptr,
-        provisioningUuid,
+        nullptr,
         false);
-    WiFiProv.printQR(serviceName, proofOfPossession, "ble");
-#else
-#error "18_LVGL_QR_Lifecycle requires BLE support in the selected ESP32-S3 Arduino configuration"
-#endif
+    WiFiProv.printQR(serviceName, proofOfPossession, "softap");
 }
 }  // namespace
 
@@ -642,6 +646,7 @@ void setup() {
     Serial.begin(115200);
     delay(500);
     Serial.println("WT32-SC01-PLUS 18_LVGL_QR_Lifecycle");
+    Serial.println("BUILD: Espressif SoftAP QR provisioning / QSPI PSRAM");
 
     if (!preferences.begin(kPrefsNamespace, false)) {
         Serial.println("ERROR: Preferences/NVS open failed");
@@ -659,6 +664,10 @@ void setup() {
         while (true) delay(1000);
     }
     board.backlight().set(currentBrightness);
+
+    Serial.printf("PSRAM: %lu MiB, free %lu KiB\n",
+                  static_cast<unsigned long>(ESP.getPsramSize() / kMiB),
+                  static_cast<unsigned long>(ESP.getFreePsram() / kKiB));
 
     lv_init();
     static_assert(sizeof(lv_color_t) == sizeof(uint16_t), "LVGL must use 16-bit color");
@@ -681,7 +690,7 @@ void setup() {
     lv_timer_create(updateDeviceInfo, 1000, nullptr);
 
     startProvisioningLifecycle();
-    Serial.println("READY: Espressif provisioning QR lifecycle initialized");
+    Serial.println("READY: Espressif SoftAP QR lifecycle initialized");
 }
 
 void loop() {
