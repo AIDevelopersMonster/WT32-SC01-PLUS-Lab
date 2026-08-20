@@ -2,6 +2,21 @@
 
 Minimal interactive LVGL 8 example for the physically validated Panlee WT32-SC01-PLUS BSP.
 
+## Project credits
+
+- **Project lead, hardware work and physical validation:** Alex Malachevsky
+- **Engineering collaboration:** Commander Sol
+- **Repository:** `AIDevelopersMonster/WT32-SC01-PLUS-Lab`
+- **License:** MIT
+
+## Video demonstration
+
+Physical demonstration of the working LVGL UI on the reference Panlee board:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
+
+The video demonstrates the already validated application path: LVGL rendering, touch input, button events with the live counter, and the backlight slider controlling real hardware.
+
 ## What it demonstrates
 
 - LVGL 8 rendering through `WT32_SC01_PLUS_Display::drawRGB565()`;
@@ -9,6 +24,47 @@ Minimal interactive LVGL 8 example for the physically validated Panlee WT32-SC01
 - a clickable LVGL button and live press counter;
 - an LVGL slider controlling the BSP backlight API;
 - application code with no LCD GPIO table, touch GPIO table, LovyanGFX configuration, or direct ST7796 commands.
+
+## How the working sketch is structured
+
+The application is intentionally split into four simple layers:
+
+```text
+Arduino application
+       -> LVGL widgets and events
+       -> WT32_SC01_PLUS BSP
+       -> ST7796 display / FT6336U-compatible touch / backlight PWM
+```
+
+`flushDisplay()` receives an RGB565 rectangle rendered by LVGL and sends it to the display through the BSP `drawRGB565()` method.
+
+`readTouch()` reads the already mapped BSP touch point and exposes it to LVGL as a normal pointer device.
+
+`onButton()` reacts to `LV_EVENT_CLICKED`, increments application state, and updates the live counter label.
+
+`onBrightness()` reads the LVGL slider value and passes it directly to:
+
+```cpp
+board.backlight().set(value);
+```
+
+That makes the example a minimal demonstration of a general HMI pattern: an LVGL widget can control real board hardware through a clean BSP API.
+
+## What can be built from these elements
+
+The same building blocks can be expanded into:
+
+- device settings menus;
+- industrial HMI pages;
+- smart-home panels;
+- greenhouse and climate controllers;
+- RS485 / Modbus control panels;
+- power, speed, temperature and actuator controls;
+- Wi-Fi configuration screens;
+- dashboards and status pages;
+- embedded instruments and touch terminals.
+
+Later examples in the library build on this same architecture rather than repeating board-specific display and touch setup.
 
 ## Dependency
 
