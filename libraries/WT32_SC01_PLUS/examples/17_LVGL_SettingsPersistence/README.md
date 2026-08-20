@@ -75,34 +75,34 @@ LVGL 8.3.11
 ## Current status
 
 ```text
-SOURCE CREATED
-CI TARGET TO BE ADDED
-PHYSICAL VALIDATION REQUIRED
-WEB FLASHER: NOT YET ELIGIBLE
+SOURCE COMPLETE
+CI TARGET ADDED
+PHYSICAL PASS
+WEB FLASHER CATALOGUED
 ```
 
-## Physical validation checklist
+Physical validation was completed on the reference Panlee specimen on **2026-08-20**.
 
-The key qualification is not just changing settings while the firmware is running. The saved values must survive a restart.
+## Physical validation record
 
-On the reference Panlee specimen:
+The physical test confirmed the persistence requirement, not merely runtime UI changes:
 
-1. Boot the example and open `SETTINGS`.
-2. Select `LIGHT`.
-3. Set brightness to a clearly non-default value, for example approximately 35%.
-4. Stop moving the slider and allow at least one second for the delayed NVS save.
-5. Confirm Serial reports a brightness save.
-6. Restart or power-cycle the board.
-7. Confirm the board returns in `LIGHT` theme without manually switching it again.
-8. Confirm physical backlight returns near the saved value rather than the default 80%.
-9. Open `SETTINGS` and confirm the switch and slider reflect the restored values.
-10. Change back to `DARK` and another brightness value, wait for save, and restart again.
-11. Confirm the second pair of settings is restored.
-12. Verify `HOME / REMOTE / SETTINGS / INFO` navigation still works after restoration.
-13. Verify Device Info continues updating.
-14. Verify no reset, panic, corrupt rendering or stuck touch occurs.
+- the LVGL shell booted and remained touch-operable;
+- Light/Dark theme changes worked as in example 16;
+- a non-default brightness value was applied through the physical backlight control;
+- the changed brightness was committed after the delayed NVS save interval;
+- the board was restarted/power-cycled after changing settings;
+- the previously selected theme was restored automatically after boot;
+- the previously selected brightness was restored automatically after boot;
+- the Settings controls reflected the restored state;
+- a second settings combination could be stored and restored on a subsequent restart;
+- `HOME / REMOTE / SETTINGS / INFO` navigation remained operational after restoration;
+- live Device Info continued updating;
+- no reset loop, panic, corrupt rendering or stuck touch was observed during the successful test.
 
-Useful Serial markers:
+Status: **PHYSICAL PASS** for persistence of the declared theme and brightness settings on the named Panlee `ZX3D50CE08S-V15-USRC / 230208` specimen.
+
+Useful Serial markers include:
 
 ```text
 WT32-SC01-PLUS 17_LVGL_SettingsPersistence
@@ -114,11 +114,17 @@ READY: settings restored theme=LIGHT brightness=35
 
 Exact brightness values depend on what the operator selects during the physical test.
 
+## Web Flasher
+
+The example is physically validated, non-destructive and included in the repository Web Flasher catalog. The Web Flasher workflow builds the sketch and generates the ESP Web Tools manifest automatically.
+
+Installing/flashing the example does not itself certify arbitrary NVS migration behavior; the validated claim is the declared theme/brightness persistence behavior exercised on the named specimen.
+
 ## Claim boundary
 
-Passing this example will certify persistence of the declared theme and brightness settings on the named specimen using ESP32 NVS/Preferences.
+This physical PASS certifies persistence of the declared theme and brightness settings on the named specimen using ESP32 NVS/Preferences.
 
-It will not certify:
+It does not certify:
 
 - arbitrary application settings;
 - NVS endurance limits;
@@ -128,5 +134,3 @@ It will not certify:
 - OTA configuration;
 - QR onboarding;
 - RS485/Modbus settings.
-
-After physical PASS the example becomes eligible for the main library README and Web Flasher catalog.
