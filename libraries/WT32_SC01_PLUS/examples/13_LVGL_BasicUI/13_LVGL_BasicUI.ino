@@ -30,14 +30,16 @@
  *   - touch input exposed to LVGL as a pointer device
  *
  * Dependency: LVGL 8.3.11
+ * Build note: build_opt.h applies -DLV_CONF_SKIP to the complete Arduino build
+ * so LVGL's own C/C++ translation units use the same configuration path.
  * Physical status: PASS on the named Panlee specimen, 2026-08-20
  */
 
 #include <WT32_SC01_PLUS.h>
 
-// Use LVGL's built-in defaults for this compact example. The CI/Web Flasher
-// install the pinned LVGL 8.3.11 dependency used for validation.
-#define LV_CONF_SKIP 1
+// LV_CONF_SKIP is supplied globally by this example's build_opt.h. Defining it
+// there (rather than only in this .ino file) is important because Arduino builds
+// LVGL's library sources as separate translation units.
 #include <lvgl.h>
 
 WT32_SC01_PLUS board;
