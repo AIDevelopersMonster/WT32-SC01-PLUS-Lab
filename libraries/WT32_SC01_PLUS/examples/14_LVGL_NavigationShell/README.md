@@ -13,7 +13,7 @@ ESP32-S3 + ST7796 480x320 + FT6336U-compatible touch
 
 ## Purpose
 
-`13_LVGL_BasicUI` is already complete and physically validated. It established the BSP-to-LVGL bridge: display flush, touch pointer input, LVGL events and hardware backlight control.
+`13_LVGL_BasicUI` is complete and physically validated. It established the BSP-to-LVGL bridge: display flush, touch pointer input, LVGL events and hardware backlight control.
 
 `14_LVGL_NavigationShell` is the next layer. It turns that validated bridge into a reusable multi-page HMI structure without yet adding network, OTA, weather or application-specific control logic.
 
@@ -21,7 +21,7 @@ The shell is intentionally small enough to test independently before later modul
 
 ## Pages
 
-The first shell contains four fixed application pages:
+The shell contains four fixed application pages:
 
 - `HOME` — landing/dashboard area;
 - `REMOTE` — six generic command slots with callback events;
@@ -114,30 +114,32 @@ for the complete Arduino build, matching the already validated `13_LVGL_BasicUI`
 ## Current status
 
 ```text
-SOURCE CREATED
+SOURCE COMPLETE
 CI TARGET ADDED
-PHYSICAL VALIDATION REQUIRED
+PHYSICAL PASS
+WEB FLASHER CATALOG TARGET
 ```
 
-No `PHYSICAL PASS` is claimed yet for this example.
+Physical validation was completed on the reference Panlee specimen on **2026-08-20**.
 
-## Physical validation checklist
+## Physical validation record
 
-On the reference Panlee specimen verify:
+The completed hardware run confirmed the intended navigation-shell behavior on the physical display and touch panel:
 
-- firmware boots without panic/reboot;
-- HOME is the initial page;
-- bottom navigation is fully visible at 480x320;
-- HOME -> REMOTE -> SETTINGS -> INFO transitions work by touch;
-- active button highlighting follows the selected page;
-- repeated page switching does not corrupt the UI;
-- REMOTE command buttons produce the expected Serial events;
-- SETTINGS backlight slider changes visible brightness;
-- touch remains correctly mapped near all four navigation buttons;
-- no unwanted scrolling or page displacement occurs;
-- no obvious redraw corruption appears during rapid switching.
+- firmware booted and rendered the LVGL shell correctly;
+- `HOME` appeared as the initial page;
+- the persistent bottom navigation bar rendered correctly at 480x320;
+- `HOME`, `REMOTE`, `SETTINGS` and `INFO` were reachable by touch;
+- active-page highlighting followed page changes;
+- repeated navigation remained stable without visible redraw corruption;
+- `REMOTE` command controls were touch-operable and generated their placeholder actions;
+- the `SETTINGS` backlight slider remained interactive and controlled physical display brightness;
+- touch mapping remained usable across the navigation bar and page controls;
+- the resulting UI was visually suitable as the reusable base shell for later HMI modules.
 
-Useful Serial markers:
+Status: **PHYSICAL PASS** for the named Panlee `ZX3D50CE08S-V15-USRC / 230208` specimen.
+
+Useful Serial markers include:
 
 ```text
 READY: LVGL navigation shell initialized
@@ -148,6 +150,12 @@ PAGE: 3
 REMOTE action placeholder: N
 ```
 
+## Web Flasher
+
+Because this example is now physically validated, it is eligible for the repository Web Flasher catalog. The Web Flasher build workflow installs `lvgl@8.3.11`, compiles catalogued sketches from the BSP examples directory, and generates the ESP Web Tools manifests automatically.
+
+The destructive SD full-media test remains intentionally excluded from the Web Flasher; this navigation shell is a normal non-destructive interactive demo.
+
 ## Claim boundary
 
-Passing this example will certify the reusable LVGL navigation shell only. It will not certify Wi-Fi, OTA, weather, RS485/Modbus application actions, SD assets or QR onboarding until those are implemented and separately exercised.
+This physical PASS certifies the reusable LVGL navigation shell only. It does not certify Wi-Fi, OTA, weather, RS485/Modbus application actions, SD assets or QR onboarding until those are implemented and separately exercised.
