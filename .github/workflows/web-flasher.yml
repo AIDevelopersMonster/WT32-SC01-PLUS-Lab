@@ -58,7 +58,7 @@ jobs:
 
             fqbn="esp32:esp32:esp32s3"
             if [[ "${sketch}" == "18_LVGL_QR_Lifecycle" ]]; then
-              fqbn="esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M"
+              fqbn="esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M,PartitionScheme=default_16MB"
             fi
 
             arduino-cli compile \
