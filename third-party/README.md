@@ -72,6 +72,22 @@ See [`BambuHelper/`](BambuHelper/).
 
 The fourth target is Sukesh Akhilesh's ESP32-TUX reusable HMI template: ESP-IDF, LVGL 8.x, LovyanGFX, Wi-Fi provisioning, OTA, SD/SPIFFS, themes, brightness and rotation.
 
-The upstream WT32-SC01 Plus pin profile matches the lab's validated Panlee mapping, but the upstream default is an 8 MB flash profile while the reference Panlee specimen physically has 16 MB Flash. Project 4 therefore starts as a controlled Panlee adaptation with a hardware evidence gate rather than by blindly flashing an upstream binary.
+**Status: `PROJECT_4_REFERENCE_WORKLOAD_COMPLETE`.** The project has been migrated to ESP-IDF 6.0.2, adapted for the physically verified Panlee 16 MiB Flash / 2 MiB PSRAM profile, flashed to the real board and physically exercised across the major HMI, storage, memory, provisioning and time-service paths.
 
-See [`esp-idf/esp32-tux/`](esp-idf/esp32-tux/).
+Project 4 is now treated as a validated architectural reference rather than the repository's future application core. Reusable ideas are being extracted incrementally above the existing `WT32_SC01_PLUS` BSP.
+
+See:
+
+- [`esp-idf/esp32-tux/`](esp-idf/esp32-tux/) — Project 4 overview and closure status;
+- [`esp-idf/esp32-tux/our-version/README.md`](esp-idf/esp32-tux/our-version/README.md) — detailed physical validation;
+- [`esp-idf/esp32-tux/TRANSFER-PLAN.md`](esp-idf/esp32-tux/TRANSFER-PLAN.md) — transfer/capability matrix and limits.
+
+## Series rule going forward
+
+Before starting each new numbered third-party project:
+
+1. record the exact upstream source/revision and license;
+2. identify hardware/toolchain assumptions that differ from the Panlee specimen;
+3. separate source/build status from physical PASS;
+4. after validation, record reusable lessons and what should **not** be adopted;
+5. close the project with a concise transfer/capability note so the next project does not depend on conversational memory.
