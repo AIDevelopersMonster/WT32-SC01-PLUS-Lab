@@ -29,10 +29,10 @@ jobs:
               --library libraries/WT32_SC01_PLUS \
               "libraries/WT32_SC01_PLUS/examples/$example"
           done
-      - name: Compile QR lifecycle with Panlee QSPI PSRAM
+      - name: Compile QR lifecycle with Panlee QSPI PSRAM and 16 MB app layout
         run: |
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M \
+            --fqbn esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M,PartitionScheme=default_16MB \
             --library libraries/WT32_SC01_PLUS \
             libraries/WT32_SC01_PLUS/examples/18_LVGL_QR_Lifecycle
       - name: Compile GitHub OTA with Panlee 16 MB dual-slot profile
@@ -41,3 +41,9 @@ jobs:
             --fqbn esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M \
             --library libraries/WT32_SC01_PLUS \
             libraries/WT32_SC01_PLUS/examples/20_LVGL_GitHubOTA
+      - name: Compile Widget Loader with Panlee 16 MB LittleFS profile
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M,PartitionScheme=default_16MB \
+            --library libraries/WT32_SC01_PLUS \
+            libraries/WT32_SC01_PLUS/examples/21_LVGL_WidgetLoader
