@@ -20,6 +20,7 @@
 #include <Update.h>
 #include <mbedtls/sha256.h>
 #include <esp_ota_ops.h>
+#include <ctype.h>
 #include "firmware_version.h"
 
 WT32_SC01_PLUS board;
@@ -36,46 +37,55 @@ constexpr const char *kManifestUrl =
     "https://github.com/AIDevelopersMonster/WT32-SC01-PLUS-Lab/releases/latest/download/"
     WT32_OTA_MANIFEST_NAME;
 
-// Root CAs used by GitHub's current TLS hierarchy. Certificate verification is
-// intentionally enabled; this example does NOT use setInsecure().
-// DigiCert Global Root G2 + DigiCert Global Root G3.
+// Current public trust anchors needed by the GitHub OTA path as of 2026-08:
+// - github.com -> Sectigo Public Server Authentication Root E46
+// - release-assets.githubusercontent.com -> Let's Encrypt -> ISRG Root X1
+// Certificate verification is intentionally enabled; setInsecure() is NOT used.
 static const char kGitHubRootCAs[] PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----
-MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
-MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
-MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI
-2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx
-1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ
-q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz
-tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ
-vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP
-BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV
-5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY
-1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4
-NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG
-Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91
-8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe
-pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
-MrY=
+MIICOjCCAcGgAwIBAgIQQvLM2htpN0RfFf51KBC49DAKBggqhkjOPQQDAzBfMQsw
+CQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMTYwNAYDVQQDEy1T
+ZWN0aWdvIFB1YmxpYyBTZXJ2ZXIgQXV0aGVudGljYXRpb24gUm9vdCBFNDYwHhcN
+MjEwMzIyMDAwMDAwWhcNNDYwMzIxMjM1OTU5WjBfMQswCQYDVQQGEwJHQjEYMBYG
+A1UEChMPU2VjdGlnbyBMaW1pdGVkMTYwNAYDVQQDEy1TZWN0aWdvIFB1YmxpYyBT
+ZXJ2ZXIgQXV0aGVudGljYXRpb24gUm9vdCBFNDYwdjAQBgcqhkjOPQIBBgUrgQQA
+IgNiAAR2+pmpbiDt+dd34wc7qNs9Xzjoq1WmVk/WSOrsfy2qw7LFeeyZYX8QeccC
+WvkEN/U0NSt3zn8gj1KjAIns1aeibVvjS5KToID1AZTc8GgHHs3u/iVStSBDHBv+
+6xnOQ6OjQjBAMB0GA1UdDgQWBBTRItpMWfFLXyY4qp3W7usNw/upYTAOBgNVHQ8B
+Af8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAwNnADBkAjAn7qRa
+qCG76UeXlImldCBteU/IvZNeWBj7LRoAasm4PdCkT0RHlAFWovgzJQxC36oCMB3q
+4S6ILuH5px0CMk7yn2xVdOOurvulGu7t0vzCAxHrRVxgED1cf5kDW21USAGKcw==
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIICPzCCAcWgAwIBAgIQBVVWvPJepDU1w6QP1atFcjAKBggqhkjOPQQDAzBhMQsw
-CQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cu
-ZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBHMzAe
-Fw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVTMRUw
-EwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20x
-IDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEczMHYwEAYHKoZIzj0CAQYF
-K4EEACIDYgAE3afZu4q4C/sLfyHS8L6+c/MzXRq8NOrexpu80JX28MzQC7phW1FG
-fp4tn+6OYwwX7Adw9c+ELkCDnOg/QW07rdOkFFk2eJ0DQ+4QE2xy3q6Ip6FrtUPO
-Z9wj/wMco+I+o0IwQDAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAd
-BgNVHQ4EFgQUs9tIpPmhxdiuNkHMEWNpYim8S8YwCgYIKoZIzj0EAwMDaAAwZQIx
-AK288mw/EkrRLTnDCgmXc/SINoyIJ7vmiI1Qhadj+Z4y3maTD/HMsQmP3Wyr+mt/
-oAIwOWZbwmSNuJ5Q3KjVSaLtx9zRSX8XAbjIho9OjIgrqJqpisXRAL34VOKa5Vt8
-sycX
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 -----END CERTIFICATE-----
 )EOF";
 
@@ -152,29 +162,29 @@ void setProgress(size_t done, size_t total) {
 }
 
 bool parseJsonString(const String &json, const char *key, String &out) {
-    String token = String('"') + key + '"';
-    int keyPos = json.indexOf(token);
+    const String token = String("\"") + key + "\"";
+    const int keyPos = json.indexOf(token);
     if (keyPos < 0) return false;
-    int colon = json.indexOf(':', keyPos + token.length());
+    const int colon = json.indexOf(':', keyPos + token.length());
     if (colon < 0) return false;
-    int first = json.indexOf('"', colon + 1);
+    const int first = json.indexOf('"', colon + 1);
     if (first < 0) return false;
-    int second = json.indexOf('"', first + 1);
+    const int second = json.indexOf('"', first + 1);
     if (second < 0) return false;
     out = json.substring(first + 1, second);
     return out.length() > 0;
 }
 
 bool parseJsonSize(const String &json, const char *key, size_t &out) {
-    String token = String('"') + key + '"';
-    int keyPos = json.indexOf(token);
+    const String token = String("\"") + key + "\"";
+    const int keyPos = json.indexOf(token);
     if (keyPos < 0) return false;
-    int colon = json.indexOf(':', keyPos + token.length());
+    const int colon = json.indexOf(':', keyPos + token.length());
     if (colon < 0) return false;
     int start = colon + 1;
-    while (start < static_cast<int>(json.length()) && isspace(json[start])) ++start;
+    while (start < static_cast<int>(json.length()) && isspace(static_cast<unsigned char>(json[start]))) ++start;
     int end = start;
-    while (end < static_cast<int>(json.length()) && isdigit(json[end])) ++end;
+    while (end < static_cast<int>(json.length()) && isdigit(static_cast<unsigned char>(json[end]))) ++end;
     if (end == start) return false;
     out = static_cast<size_t>(strtoull(json.substring(start, end).c_str(), nullptr, 10));
     return out > 0;
@@ -231,6 +241,14 @@ bool ensureWiFi() {
     return true;
 }
 
+void configureHttp(HTTPClient &http) {
+    http.setConnectTimeout(kHttpTimeoutMs);
+    http.setTimeout(kHttpTimeoutMs);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    http.setRedirectLimit(8);
+    http.setUserAgent("WT32-SC01-PLUS-GitHubOTA/" WT32_OTA_VERSION);
+}
+
 bool fetchManifest(OtaManifest &manifest) {
     if (!ensureWiFi()) return false;
 
@@ -240,12 +258,7 @@ bool fetchManifest(OtaManifest &manifest) {
     client.setHandshakeTimeout(15);
 
     HTTPClient http;
-    http.setConnectTimeout(kHttpTimeoutMs);
-    http.setTimeout(kHttpTimeoutMs);
-    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    http.setRedirectLimit(8);
-    http.setUserAgent("WT32-SC01-PLUS-GitHubOTA/" WT32_OTA_VERSION);
-
+    configureHttp(http);
     if (!http.begin(client, kManifestUrl)) {
         setStatus("MANIFEST ERROR", "HTTP begin failed");
         return false;
@@ -253,7 +266,7 @@ bool fetchManifest(OtaManifest &manifest) {
 
     const int code = http.GET();
     if (code != HTTP_CODE_OK) {
-        String error = String("HTTP ") + code;
+        const String error = String("HTTP ") + code;
         http.end();
         setStatus("MANIFEST ERROR", error);
         return false;
@@ -266,7 +279,7 @@ bool fetchManifest(OtaManifest &manifest) {
         return false;
     }
 
-    String body = http.getString();
+    const String body = http.getString();
     http.end();
     if (body.length() == 0 || body.length() > kManifestMaxBytes) {
         setStatus("MANIFEST ERROR", "Empty/oversized manifest");
@@ -277,7 +290,6 @@ bool fetchManifest(OtaManifest &manifest) {
         setStatus("MANIFEST ERROR", "Required fields missing or invalid");
         return false;
     }
-
     if (manifest.board != WT32_OTA_BOARD_ID) {
         setStatus("BOARD MISMATCH", manifest.board);
         return false;
@@ -293,8 +305,7 @@ bool fetchManifest(OtaManifest &manifest) {
         return false;
     }
     if (manifest.size > next->size) {
-        setStatus("IMAGE TOO LARGE",
-                  String(manifest.size) + " > slot " + String(next->size));
+        setStatus("IMAGE TOO LARGE", String(manifest.size) + " > slot " + String(next->size));
         return false;
     }
 
@@ -340,12 +351,7 @@ bool installManifest(const OtaManifest &manifest) {
     client.setHandshakeTimeout(15);
 
     HTTPClient http;
-    http.setConnectTimeout(kHttpTimeoutMs);
-    http.setTimeout(kHttpTimeoutMs);
-    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    http.setRedirectLimit(8);
-    http.setUserAgent("WT32-SC01-PLUS-GitHubOTA/" WT32_OTA_VERSION);
-
+    configureHttp(http);
     if (!http.begin(client, manifest.firmwareUrl)) {
         setStatus("DOWNLOAD ERROR", "HTTP begin failed");
         return false;
@@ -353,7 +359,7 @@ bool installManifest(const OtaManifest &manifest) {
 
     const int code = http.GET();
     if (code != HTTP_CODE_OK) {
-        String error = String("HTTP ") + code;
+        const String error = String("HTTP ") + code;
         http.end();
         setStatus("DOWNLOAD ERROR", error);
         return false;
@@ -362,13 +368,12 @@ bool installManifest(const OtaManifest &manifest) {
     const int contentLength = http.getSize();
     if (contentLength > 0 && static_cast<size_t>(contentLength) != manifest.size) {
         http.end();
-        setStatus("SIZE MISMATCH",
-                  String(contentLength) + " != manifest " + String(manifest.size));
+        setStatus("SIZE MISMATCH", String(contentLength) + " != manifest " + String(manifest.size));
         return false;
     }
 
     if (!Update.begin(manifest.size, U_FLASH)) {
-        String error = String("Update.begin: ") + Update.errorString();
+        const String error = String("Update.begin: ") + Update.errorString();
         http.end();
         setStatus("OTA WRITE ERROR", error);
         return false;
@@ -428,8 +433,7 @@ bool installManifest(const OtaManifest &manifest) {
 
     if (!streamOk || total != manifest.size) {
         Update.abort();
-        setStatus("DOWNLOAD ERROR",
-                  String("Received ") + total + " / " + manifest.size + " bytes");
+        setStatus("DOWNLOAD ERROR", String("Received ") + total + " / " + manifest.size + " bytes");
         return false;
     }
 
@@ -442,15 +446,14 @@ bool installManifest(const OtaManifest &manifest) {
         return false;
     }
 
-    setStatus("SHA256 PASS", "Finalizing inactive OTA slot");
-    if (!Update.end(true) || !Update.isFinished()) {
+    setStatus("SHA256 PASS", "Finalizing complete inactive OTA slot");
+    if (!Update.end(false) || !Update.isFinished()) {
         setStatus("OTA FINALIZE ERROR", Update.errorString());
         return false;
     }
 
     setProgress(manifest.size, manifest.size);
-    setStatus("UPDATE READY",
-              String(WT32_OTA_VERSION) + " -> " + manifest.version + " | rebooting");
+    setStatus("UPDATE READY", String(WT32_OTA_VERSION) + " -> " + manifest.version + " | rebooting");
     delay(1200);
     ESP.restart();
     return true;
@@ -475,8 +478,7 @@ void checkForUpdate() {
 
     const int cmp = compareVersions(WT32_OTA_VERSION, manifest.version);
     if (cmp < 0) {
-        setStatus("UPDATE AVAILABLE",
-                  String(manifest.version) + " | " + String(manifest.size / 1024UL) + " KiB");
+        setStatus("UPDATE AVAILABLE", String(manifest.version) + " | " + String(manifest.size / 1024UL) + " KiB");
         if (installButton) lv_obj_clear_state(installButton, LV_STATE_DISABLED);
     } else if (cmp == 0) {
         setStatus("UP TO DATE", WT32_OTA_VERSION);
@@ -517,10 +519,10 @@ void buildUi() {
     const esp_partition_t *running = esp_ota_get_running_partition();
     const esp_partition_t *next = esp_ota_get_next_update_partition(nullptr);
     lv_obj_t *slot = lv_label_create(screen);
-    lv_label_set_text_fmt(slot, "Slot: %s -> %s | OTA slot %.2f MiB",
+    lv_label_set_text_fmt(slot, "Slot: %s -> %s | capacity %lu KiB",
                           running ? running->label : "?",
                           next ? next->label : "?",
-                          next ? static_cast<double>(next->size) / 1048576.0 : 0.0);
+                          next ? static_cast<unsigned long>(next->size / 1024UL) : 0UL);
     lv_obj_set_style_text_color(slot, lv_color_hex(0x90A4AE), 0);
     lv_obj_set_pos(slot, 24, 108);
 
@@ -560,7 +562,7 @@ void buildUi() {
     detailLabel = lv_label_create(screen);
     lv_label_set_long_mode(detailLabel, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(detailLabel, 432);
-    lv_label_set_text(detailLabel, "Uses saved Wi-Fi credentials. HTTPS certificate verification + SHA-256 enabled.");
+    lv_label_set_text(detailLabel, "Saved Wi-Fi; verified HTTPS; SHA-256 before slot activation.");
     lv_obj_set_style_text_color(detailLabel, lv_color_hex(0x90A4AE), 0);
     lv_obj_set_pos(detailLabel, 24, 274);
 }
@@ -595,7 +597,7 @@ void printBootInfo() {
                   next ? static_cast<unsigned long>(next->address) : 0UL,
                   next ? static_cast<unsigned long>(next->size) : 0UL);
     Serial.printf("MANIFEST: %s\n", kManifestUrl);
-    Serial.println("TLS: CA verification enabled; setInsecure() is NOT used");
+    Serial.println("TLS: Sectigo E46 + ISRG Root X1 trust; setInsecure() NOT used");
 #if CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
     Serial.println("BOOTLOADER ROLLBACK: ENABLED");
 #else
@@ -667,8 +669,7 @@ void loop() {
         lv_obj_add_state(installButton, LV_STATE_DISABLED);
         installManifest(availableManifest);
         lv_obj_clear_state(checkButton, LV_STATE_DISABLED);
-        if (availableManifest.valid &&
-            compareVersions(WT32_OTA_VERSION, availableManifest.version) < 0) {
+        if (availableManifest.valid && compareVersions(WT32_OTA_VERSION, availableManifest.version) < 0) {
             lv_obj_clear_state(installButton, LV_STATE_DISABLED);
         }
         busy = false;
