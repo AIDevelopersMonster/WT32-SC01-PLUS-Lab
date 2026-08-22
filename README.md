@@ -152,7 +152,7 @@ This repository therefore already contains a complete worked example of practica
 
 ## Arduino BSP milestone
 
-A reusable Arduino library now lives in [`libraries/WT32_SC01_PLUS`](libraries/WT32_SC01_PLUS).
+A reusable Arduino library now lives in [`libraries/WT32_SC01_PLUS`](libraries/WT32_SC01_PLUS). The current development line is **v0.2.x**.
 
 The current Arduino example set is:
 
@@ -169,13 +169,28 @@ The current Arduino example set is:
 10_TestConsole
 11_RainbowTouch
 12_RetroClock
+13_LVGL_BasicUI
+14_LVGL_NavigationShell
+15_LVGL_DeviceInfo
+16_LVGL_ThemeSwitch
+17_LVGL_SettingsPersistence
+18_LVGL_QR_Lifecycle
+19_LVGL_Orientation
+20_LVGL_GitHubOTA
+21_LVGL_WidgetLoader
 ```
 
-Physical functional validation on the reference specimen has been completed for display, touch, SD read/write, audio, external GPIO, Wi-Fi and BLE. `06_RS485Test` is included but remains pending until an external RS-485 peer is available.
+Physical functional validation on the reference specimen has been completed for display, touch, SD read/write, audio, external GPIO, Wi-Fi, BLE and the LVGL application sequence through Widget Loader. `06_RS485Test` remains separately scoped to external-peer validation.
 
 `10_TestConsole` provides a common modular operator interface: individual tests remain separate source modules while the console can launch them by number from Serial CLI or from the touch-screen GUI.
 
 `12_RetroClock` is an application-level demonstration of the browser-first user path: Web Flasher -> setup AP -> browser Wi-Fi/timezone configuration -> NTP -> retro seven-segment clock.
+
+Examples `13` through `19` build an incrementally validated LVGL HMI stack: basic UI, navigation shell, live device information, theme switching, persisted settings, Espressif QR provisioning and four-orientation touch-aligned UI.
+
+`20_LVGL_GitHubOTA` adds manifest-driven HTTPS firmware updates from GitHub Releases with streamed SHA-256 verification and A/B OTA slots. The full `0.1.2 -> 0.1.3` GitHub OTA path was physically passed twice on the reference specimen. Bootloader rollback remains a separate validation gate.
+
+`21_LVGL_WidgetLoader` adds a declarative Widget Runtime. JSON widgets can be uploaded over a protected SoftAP/Web page, validated, stored in LittleFS, rendered as LVGL objects and automatically restored after reset. The intended v1 upload/persistence/render/autoload flow is physically passed on the reference specimen.
 
 ### Browser-based test flashing
 
