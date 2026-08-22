@@ -43,7 +43,7 @@ Sketch -> Include Library -> Add .ZIP Library...
 
 The packaging workflow runs on relevant `main` updates and can also be started manually. A tag matching `arduino-v*` publishes the same ZIP as a GitHub Release asset.
 
-Current library version is defined in `library.properties`.
+Current library version is defined in `library.properties`. The current development line is **v0.2.x**.
 
 Real Wi-Fi credentials are never packaged: `examples/08_WiFiTest/wifi_secrets.h` is local-only and explicitly excluded from the generated ZIP.
 
@@ -71,6 +71,8 @@ The library contains the diagnostic set plus compact application-level demonstra
 17_LVGL_SettingsPersistence
 18_LVGL_QR_Lifecycle
 19_LVGL_Orientation
+20_LVGL_GitHubOTA
+21_LVGL_WidgetLoader
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -93,6 +95,10 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `19_LVGL_Orientation` validates LVGL 8 runtime software rotation at `0 / 90 / 180 / 270` degrees while keeping the BSP's physically validated landscape touch mapping as the native coordinate layer. LVGL performs the pointer-coordinate rotation, and the example verifies touch hit-testing with five targets in every orientation, logical resolution changes, QR geometry, theme/backlight controls and orientation persistence through NVS. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/19_LVGL_Orientation/README.md`](examples/19_LVGL_Orientation/README.md).
 
+`20_LVGL_GitHubOTA` adds manifest-driven HTTPS updates from GitHub Releases, streamed SHA-256 verification and A/B OTA slots using the validated 16 MiB Flash layout. The complete GitHub OTA path from firmware `0.1.2` to `0.1.3` was physically passed twice on the reference Panlee specimen. Bootloader rollback remains a separate validation gate and is not claimed by this example. See [`examples/20_LVGL_GitHubOTA/README.md`](examples/20_LVGL_GitHubOTA/README.md).
+
+`21_LVGL_WidgetLoader` adds a declarative LVGL Widget Runtime. A JSON widget can be uploaded through a protected SoftAP/Web page, validated against the supported schema, stored in LittleFS, rendered as LVGL objects and automatically restored after reset. The v1 manager, Web Upload, LittleFS persistence, reset/autoload, live bindings and brightness actions were physically exercised on the reference Panlee specimen. See [`examples/21_LVGL_WidgetLoader/README.md`](examples/21_LVGL_WidgetLoader/README.md).
+
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
 Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stored.
@@ -106,8 +112,9 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
 - [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL 0/90/180/270 orientation and touch](https://youtube.com/shorts/ttZOVsNHwy4)
+- [YouTube Shorts — WT32-SC01-PLUS GitHub OTA](https://youtube.com/shorts/gVSZsYNjtj4)
 
-## v0.1 status
+## v0.2 status
 
 | Subsystem | Status | Notes |
 |---|---|---|
@@ -134,6 +141,8 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | LVGL Settings Persistence | **PHYSICAL PASS** | Theme and backlight brightness persisted through ESP32 NVS/Preferences and restored after restart/power cycle on Panlee V15 / 230208; Web Flasher catalogued |
 | LVGL QR Lifecycle | **PHYSICAL PASS** | Espressif SoftAP QR provisioning, Security 1/PoP, credential delivery, Wi-Fi/IP, GitHub info QR transition and reset/reprovision physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
 | LVGL Orientation | **PHYSICAL PASS** | LVGL software rotation at 0/90/180/270, aligned touch hit-testing, logical resolution changes, QR/theme/backlight continuity and NVS orientation restore physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
+| GitHub OTA | **PHYSICAL PASS** | Full GitHub manifest/HTTPS/SHA-256/A-B OTA path passed twice for `0.1.2 -> 0.1.3`; bootloader rollback remains a separate unvalidated gate |
+| Widget Runtime v1 | **PHYSICAL PASS** | Manager, protected SoftAP/Web Upload, JSON validation, LittleFS persistence, LVGL rendering, live bindings, brightness actions and reset/autoload exercised on Panlee V15 / 230208 |
 
 ## RainbowTouch physical demonstration
 
