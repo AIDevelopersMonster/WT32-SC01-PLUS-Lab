@@ -13,12 +13,18 @@ The videos are demonstrations of specific experiments. Hardware conclusions rema
 
 ## Display / touch / LVGL
 
+- [WT32-SC01-PLUS + LVGL: поворот экрана 0/90/180/270° и корректный Touch](https://youtube.com/shorts/ttZOVsNHwy4)
 - [WT32-SC01-PLUS: LVGL + Touch заработали! ESP32-S3, ST7796 и FT6336U](https://youtube.com/shorts/ZnK9qvZnujg)
 - [ChatGPT калибрует тачскрин WT32-SC01-PLUS 🔧 ESP32-S3 + FT6336U](https://youtube.com/shorts/-G_gq_CHcp4)
 - [Запустили дисплей WT32-SC01-PLUS в ESP-IDF 🔥 ST7796 работает!](https://youtube.com/shorts/8Ec1ZflBbhY)
+
+## GitHub OTA
+
+- [WT32-SC01-PLUS GitHub OTA — часть 1: baseline 0.1.0, A/B-разметка, LVGL UI и ожидаемый 404 до публикации Release](https://youtube.com/shorts/gVSZsYNjtj4)
 
 ## Notes
 
 - These links document the project progression in video form.
 - A video demonstration is supplementary evidence and does not replace the repository's specimen-specific test records.
+- `20_LVGL_GitHubOTA` part 1 physically validates the baseline UI/network path only through the expected pre-release `404` boundary; the full `0.1.0 -> 0.1.1` OTA cycle remains a separate physical gate.
 - When a new video is published, add it here under the closest subsystem heading and avoid duplicate links.

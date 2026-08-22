@@ -43,7 +43,7 @@ Sketch -> Include Library -> Add .ZIP Library...
 
 The packaging workflow runs on relevant `main` updates and can also be started manually. A tag matching `arduino-v*` publishes the same ZIP as a GitHub Release asset.
 
-Current library version is defined in `library.properties`.
+Current library version is defined in `library.properties`. The current development line is **v0.2.x**.
 
 Real Wi-Fi credentials are never packaged: `examples/08_WiFiTest/wifi_secrets.h` is local-only and explicitly excluded from the generated ZIP.
 
@@ -68,6 +68,11 @@ The library contains the diagnostic set plus compact application-level demonstra
 14_LVGL_NavigationShell
 15_LVGL_DeviceInfo
 16_LVGL_ThemeSwitch
+17_LVGL_SettingsPersistence
+18_LVGL_QR_Lifecycle
+19_LVGL_Orientation
+20_LVGL_GitHubOTA
+21_LVGL_WidgetLoader
 ```
 
 `10_TestConsole` is the combined modular launcher with Serial CLI and touch GUI. The individual examples remain independent deep/qualification tests.
@@ -84,6 +89,16 @@ The library contains the diagnostic set plus compact application-level demonstra
 
 `16_LVGL_ThemeSwitch` adds a centralized runtime Light/Dark appearance layer to the validated LVGL shell while retaining navigation, live Device Info, touch input and physical backlight control. Theme changes are applied safely through deferred LVGL page rebuilds. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/16_LVGL_ThemeSwitch/README.md`](examples/16_LVGL_ThemeSwitch/README.md).
 
+`17_LVGL_SettingsPersistence` extends the validated theme layer with non-volatile UI settings. It stores the selected Light/Dark theme and backlight brightness in ESP32 NVS through Arduino `Preferences`, debounces brightness writes, and restores both values after restart or power cycle. This persistence behavior has been physically validated on the reference Panlee specimen and the example is included in the Web Flasher catalog. See [`examples/17_LVGL_SettingsPersistence/README.md`](examples/17_LVGL_SettingsPersistence/README.md).
+
+`18_LVGL_QR_Lifecycle` adds the physically validated Espressif QR-driven onboarding flow. It renders an Espressif SoftAP provisioning QR on the LVGL HOME page, uses Security 1 / Proof of Possession with the official provisioning protocol, accepts Wi-Fi credentials from the phone application, joins the target network, then changes the same QR area into a GitHub/project information QR. `RESET WIFI + REBOOT` allows the complete onboarding sequence to be repeated. The validated build uses the Panlee 2 MiB QSPI PSRAM profile and is included in the Web Flasher catalog. See [`examples/18_LVGL_QR_Lifecycle/README.md`](examples/18_LVGL_QR_Lifecycle/README.md).
+
+`19_LVGL_Orientation` validates LVGL 8 runtime software rotation at `0 / 90 / 180 / 270` degrees while keeping the BSP's physically validated landscape touch mapping as the native coordinate layer. LVGL performs the pointer-coordinate rotation, and the example verifies touch hit-testing with five targets in every orientation, logical resolution changes, QR geometry, theme/backlight controls and orientation persistence through NVS. The example has been physically validated on the reference Panlee specimen and is included in the Web Flasher catalog. See [`examples/19_LVGL_Orientation/README.md`](examples/19_LVGL_Orientation/README.md).
+
+`20_LVGL_GitHubOTA` adds manifest-driven HTTPS updates from GitHub Releases, streamed SHA-256 verification and A/B OTA slots using the validated 16 MiB Flash layout. The complete GitHub OTA path from firmware `0.1.2` to `0.1.3` was physically passed twice on the reference Panlee specimen. Bootloader rollback remains a separate validation gate and is not claimed by this example. See [`examples/20_LVGL_GitHubOTA/README.md`](examples/20_LVGL_GitHubOTA/README.md).
+
+`21_LVGL_WidgetLoader` adds a declarative LVGL Widget Runtime. A JSON widget can be uploaded through a protected SoftAP/Web page, validated against the supported schema, stored in LittleFS, rendered as LVGL objects and automatically restored after reset. The v1 manager, Web Upload, LittleFS persistence, reset/autoload, live bindings and brightness actions were physically exercised on the reference Panlee specimen. See [`examples/21_LVGL_WidgetLoader/README.md`](examples/21_LVGL_WidgetLoader/README.md).
+
 The display API also exposes `drawRGB565(x, y, w, h, pixels)` for RGB565 rectangle blits. LCD color transfers are synchronized with the ESP LCD completion callback so caller-owned buffers are not reused while DMA is still active.
 
 Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stored.
@@ -95,8 +110,11 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL 8 Basic UI](https://youtube.com/shorts/1nZqa2jilpw)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Device Info](https://youtube.com/shorts/vlxDE6bILbU)
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
+- [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 0/90/180/270 orientation and touch](https://youtube.com/shorts/ttZOVsNHwy4)
+- [YouTube Shorts — WT32-SC01-PLUS GitHub OTA](https://youtube.com/shorts/gVSZsYNjtj4)
 
-## v0.1 status
+## v0.2 status
 
 | Subsystem | Status | Notes |
 |---|---|---|
@@ -120,6 +138,11 @@ Use **ESP32S3 Dev Module**. Host-specific COM numbers are intentionally not stor
 | LVGL Navigation Shell | **PHYSICAL PASS** | Four-page persistent navigation shell, touch page switching, active-page highlighting, remote placeholders and Settings backlight control physically exercised on Panlee V15 / 230208 |
 | LVGL Device Info | **PHYSICAL PASS** | Live ESP32-S3 runtime information, Flash/PSRAM/heap/sketch/uptime and touch-controller data displayed on the validated navigation shell |
 | LVGL Theme Switch | **PHYSICAL PASS** | Runtime Dark/Light switching, theme-aware navigation/pages, Device Info continuity and physical backlight control exercised on Panlee V15 / 230208; Web Flasher catalogued |
+| LVGL Settings Persistence | **PHYSICAL PASS** | Theme and backlight brightness persisted through ESP32 NVS/Preferences and restored after restart/power cycle on Panlee V15 / 230208; Web Flasher catalogued |
+| LVGL QR Lifecycle | **PHYSICAL PASS** | Espressif SoftAP QR provisioning, Security 1/PoP, credential delivery, Wi-Fi/IP, GitHub info QR transition and reset/reprovision physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
+| LVGL Orientation | **PHYSICAL PASS** | LVGL software rotation at 0/90/180/270, aligned touch hit-testing, logical resolution changes, QR/theme/backlight continuity and NVS orientation restore physically exercised on Panlee V15 / 230208; Web Flasher catalogued |
+| GitHub OTA | **PHYSICAL PASS** | Full GitHub manifest/HTTPS/SHA-256/A-B OTA path passed twice for `0.1.2 -> 0.1.3`; bootloader rollback remains a separate unvalidated gate |
+| Widget Runtime v1 | **PHYSICAL PASS** | Manager, protected SoftAP/Web Upload, JSON validation, LittleFS persistence, LVGL rendering, live bindings, brightness actions and reset/autoload exercised on Panlee V15 / 230208 |
 
 ## RainbowTouch physical demonstration
 
@@ -211,6 +234,70 @@ Video evidence:
 - [YouTube Shorts — WT32-SC01-PLUS + LVGL Light/Dark Theme Switch](https://youtube.com/shorts/e1_FdMlRdpw)
 
 This promotes `16_LVGL_ThemeSwitch` to **PHYSICAL PASS** for the named Panlee specimen and includes it in the Web Flasher catalog. Theme persistence across reboot is not claimed by this example.
+
+## LVGL Settings Persistence physical demonstration
+
+`17_LVGL_SettingsPersistence` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- Light/Dark theme switching remained operational;
+- a non-default brightness value could be selected and saved;
+- brightness writes were delayed so slider movement did not write NVS on every step;
+- the selected theme and brightness survived restart/power cycle;
+- both values were restored automatically at boot;
+- Settings controls reflected the restored values;
+- repeated storage/restoration with a second settings combination worked normally;
+- `HOME / REMOTE / SETTINGS / INFO` navigation and live Device Info remained operational after restoration.
+
+This promotes `17_LVGL_SettingsPersistence` to **PHYSICAL PASS** for persistence of the declared theme and brightness settings on the named Panlee specimen and includes it in the Web Flasher catalog.
+
+## LVGL QR Lifecycle physical demonstration
+
+`18_LVGL_QR_Lifecycle` was physically exercised on the reference Panlee specimen on 2026-08-20 using the corrected Espressif **SoftAP** provisioning transport and the Panlee **2 MiB QSPI PSRAM** build profile.
+
+Observed behavior:
+
+- the firmware booted stably with 2 MiB QSPI PSRAM detected;
+- the Espressif provisioning QR rendered on the physical LCD;
+- the phone provisioning application accepted the QR identity and PoP;
+- Security 1 provisioning completed;
+- Wi-Fi credentials were delivered to the ESP32-S3;
+- the station connected and obtained an IP address;
+- the HOME QR transitioned from provisioning payload to the project GitHub URL;
+- the GitHub information QR was decoded successfully during the demonstration;
+- `HOME / REMOTE / SETTINGS / INFO` navigation remained operational;
+- `RESET WIFI + REBOOT` erased saved Wi-Fi credentials and restarted onboarding;
+- the subsequent provisioning cycle again accepted credentials and reconnected;
+- the corrected SoftAP build showed no Guru Meditation or reboot loop.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS Espressif QR provisioning + LVGL lifecycle](https://youtube.com/shorts/Fngs_ii1uKk)
+
+This promotes `18_LVGL_QR_Lifecycle` to **PHYSICAL PASS** for the corrected Espressif SoftAP QR lifecycle on the named Panlee specimen and includes it in the Web Flasher catalog. The earlier BLE-controller startup failure remains documented in the example README as a separate failed transport experiment.
+
+## LVGL Orientation physical demonstration
+
+`19_LVGL_Orientation` was physically exercised on the reference Panlee specimen on 2026-08-20.
+
+Observed behavior:
+
+- runtime switching between `0 / 90 / 180 / 270` degrees worked;
+- landscape orientations used `480x320` logical geometry and portrait orientations used `320x480`;
+- the five `TL / TR / CENTER / BL / BR` touch targets remained correctly aligned with the rendered UI in every orientation;
+- LVGL pointer rotation worked on top of the existing BSP landscape touch mapping without a second application-specific transform;
+- `TEST / QR / SET / INFO` navigation remained operational after repeated rotation;
+- QR geometry remained correct and usable;
+- Light/Dark theme and the physical backlight slider remained operational;
+- selected orientation was stored through `Preferences` / NVS and restored after restart;
+- no panic, reset loop or visible rendering corruption was observed during the successful run.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS + LVGL 0/90/180/270 orientation and touch](https://youtube.com/shorts/ttZOVsNHwy4)
+
+This promotes `19_LVGL_Orientation` to **PHYSICAL PASS** for the named Panlee specimen and includes it in the Web Flasher catalog.
 
 ## Validated LCD mapping
 

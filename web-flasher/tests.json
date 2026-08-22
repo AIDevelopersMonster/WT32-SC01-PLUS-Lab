@@ -91,6 +91,24 @@
       "sketch": "16_LVGL_ThemeSwitch",
       "label": "LVGL Theme Switch",
       "description": "Physically validated LVGL HMI demo with runtime Dark/Light theme switching, theme-aware navigation and pages, live Device Info continuity and physical backlight control."
+    },
+    {
+      "id": "lvgl-settings-persistence",
+      "sketch": "17_LVGL_SettingsPersistence",
+      "label": "LVGL Settings Persistence",
+      "description": "Physically validated LVGL HMI demo that stores Dark/Light theme and backlight brightness in ESP32 NVS via Preferences and restores both settings after restart or power cycle."
+    },
+    {
+      "id": "lvgl-qr-lifecycle",
+      "sketch": "18_LVGL_QR_Lifecycle",
+      "label": "LVGL QR Provisioning Lifecycle",
+      "description": "Physically validated Espressif SoftAP QR provisioning demo with Security 1/PoP, phone-driven Wi-Fi onboarding, connected-state GitHub info QR, Wi-Fi reset/reprovision and the Panlee 2 MiB QSPI PSRAM profile."
+    },
+    {
+      "id": "lvgl-orientation",
+      "sketch": "19_LVGL_Orientation",
+      "label": "LVGL Four-Orientation Test",
+      "description": "Physically validated LVGL 8 software-rotation demo for 0/90/180/270 degrees with aligned touch hit-testing, logical resolution changes, QR geometry, theme/backlight controls and NVS orientation restore."
     }
   ]
 }

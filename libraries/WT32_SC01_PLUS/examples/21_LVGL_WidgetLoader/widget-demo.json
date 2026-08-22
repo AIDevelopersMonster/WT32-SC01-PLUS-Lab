@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "id": "demo.system",
+  "name": "System Dashboard",
+  "version": "1.0.0",
+  "background": "#101820",
+  "objects": [
+    {
+      "type": "label",
+      "x": 18,
+      "y": 8,
+      "w": 330,
+      "text": "SYSTEM DASHBOARD",
+      "color": "#80CBC4"
+    },
+    {
+      "type": "label",
+      "x": 18,
+      "y": 50,
+      "w": 300,
+      "bind": "system.uptime",
+      "prefix": "UPTIME: ",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "label",
+      "x": 18,
+      "y": 86,
+      "w": 300,
+      "bind": "system.heap",
+      "prefix": "FREE HEAP: ",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "label",
+      "x": 18,
+      "y": 122,
+      "w": 300,
+      "bind": "system.psram",
+      "prefix": "FREE PSRAM: ",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "label",
+      "x": 18,
+      "y": 158,
+      "w": 300,
+      "bind": "wifi.rssi",
+      "prefix": "WIFI RSSI: ",
+      "color": "#90A4AE"
+    },
+    {
+      "type": "bar",
+      "x": 320,
+      "y": 50,
+      "w": 130,
+      "h": 18,
+      "value": 80,
+      "color": "#80CBC4"
+    },
+    {
+      "type": "button",
+      "x": 300,
+      "y": 128,
+      "w": 150,
+      "h": 44,
+      "text": "BRIGHT 30%",
+      "action": "set_brightness",
+      "value": 30
+    },
+    {
+      "type": "button",
+      "x": 300,
+      "y": 182,
+      "w": 150,
+      "h": 44,
+      "text": "BRIGHT 100%",
+      "action": "set_brightness",
+      "value": 100
+    }
+  ]
+}

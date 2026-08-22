@@ -1,0 +1,124 @@
+name: GitHub OTA Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'ota-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-ota:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP32 Arduino core
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32@3.3.8 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+
+      - name: Install LVGL
+        run: arduino-cli lib install "lvgl@8.3.11"
+
+      - name: Read firmware version
+        id: version
+        shell: bash
+        run: |
+          header="libraries/WT32_SC01_PLUS/examples/20_LVGL_GitHubOTA/firmware_version.h"
+          version="$(sed -n 's/^#define WT32_OTA_VERSION "\([^"]*\)"/\1/p' "$header")"
+          if [[ -z "$version" ]]; then
+            echo "Could not read WT32_OTA_VERSION"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Firmware version: $version"
+
+      - name: Verify release tag matches firmware version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          expected="ota-v${{ steps.version.outputs.version }}"
+          if [[ "${GITHUB_REF_NAME}" != "$expected" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match firmware version $expected"
+            exit 1
+          fi
+
+      - name: Compile 20_LVGL_GitHubOTA
+        shell: bash
+        run: |
+          rm -rf .ota-build
+          mkdir -p .ota-build
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M \
+            --library libraries/WT32_SC01_PLUS \
+            --output-dir .ota-build \
+            libraries/WT32_SC01_PLUS/examples/20_LVGL_GitHubOTA
+
+      - name: Build OTA assets and manifest
+        id: assets
+        shell: bash
+        run: |
+          app_bin="$(find .ota-build -maxdepth 1 -type f -name '*.ino.bin' | head -n 1)"
+          if [[ -z "$app_bin" ]]; then
+            echo "Application OTA binary not found"
+            find .ota-build -maxdepth 1 -type f -print
+            exit 1
+          fi
+
+          cp "$app_bin" .ota-build/panlee-github-ota.bin
+          sha="$(sha256sum .ota-build/panlee-github-ota.bin | awk '{print $1}')"
+          size="$(stat -c '%s' .ota-build/panlee-github-ota.bin)"
+          version="${{ steps.version.outputs.version }}"
+
+          if [[ -n "${GITHUB_REF_NAME}" && "${GITHUB_REF_NAME}" == ota-v* ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="ota-v${version}"
+          fi
+
+          firmware_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/panlee-github-ota.bin"
+
+          cat > .ota-build/panlee-github-ota.json <<EOF
+          {
+            "schema": 1,
+            "board": "panlee-zx3d50ce08s-v15-usrc",
+            "version": "${version}",
+            "channel": "stable",
+            "size": ${size},
+            "sha256": "${sha}",
+            "firmware": "${firmware_url}"
+          }
+          EOF
+
+          echo "binary=.ota-build/panlee-github-ota.bin" >> "$GITHUB_OUTPUT"
+          echo "manifest=.ota-build/panlee-github-ota.json" >> "$GITHUB_OUTPUT"
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          echo "size=$size" >> "$GITHUB_OUTPUT"
+          cat .ota-build/panlee-github-ota.json
+
+      - name: Upload CI OTA artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WT32-SC01-PLUS-GitHub-OTA-${{ steps.version.outputs.version }}
+          path: |
+            .ota-build/panlee-github-ota.bin
+            .ota-build/panlee-github-ota.json
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            .ota-build/panlee-github-ota.bin \
+            .ota-build/panlee-github-ota.json \
+            --title "WT32-SC01-PLUS GitHub OTA ${{ steps.version.outputs.version }}" \
+            --notes "Panlee WT32-SC01-PLUS / ZX3D50CE08S-V15-USRC GitHub OTA release. Firmware version ${{ steps.version.outputs.version }}. SHA-256: ${{ steps.assets.outputs.sha256 }}. Size: ${{ steps.assets.outputs.size }} bytes."

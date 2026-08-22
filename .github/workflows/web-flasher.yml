@@ -55,8 +55,14 @@ jobs:
           while IFS='|' read -r test_id sketch; do
             echo "=== Building ${test_id}: ${sketch} ==="
             mkdir -p ".web-build/${test_id}"
+
+            fqbn="esp32:esp32:esp32s3"
+            if [[ "${sketch}" == "18_LVGL_QR_Lifecycle" ]]; then
+              fqbn="esp32:esp32:esp32s3:PSRAM=enabled,FlashSize=16M,PartitionScheme=default_16MB"
+            fi
+
             arduino-cli compile \
-              --fqbn esp32:esp32:esp32s3 \
+              --fqbn "${fqbn}" \
               --library libraries/WT32_SC01_PLUS \
               --output-dir ".web-build/${test_id}" \
               "libraries/WT32_SC01_PLUS/examples/${sketch}"
