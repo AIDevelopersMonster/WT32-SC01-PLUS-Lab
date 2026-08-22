@@ -1,6 +1,6 @@
 # 20_LVGL_GitHubOTA
 
-Direct GitHub Release OTA update experiment for the WT32-SC01-PLUS Arduino BSP.
+Direct GitHub Release OTA update demonstration for the WT32-SC01-PLUS Arduino BSP.
 
 Target specimen:
 
@@ -13,9 +13,32 @@ ESP32-S3
 2 MiB QSPI PSRAM
 ```
 
+## Current status
+
+```text
+GITHUB OTA DEMONSTRATION      PHYSICAL PASS
+VALIDATED UPDATE PATH         0.1.2 -> 0.1.3
+VALIDATION RUNS               PASSED TWICE ON REFERENCE BOARD
+MANIFEST FETCH                PASS
+HTTPS ASSET DOWNLOAD          PASS
+BYTE COUNT CHECK              PASS
+SHA-256 CHECK                 PASS
+Update.end() / FINALIZE       PASS
+INACTIVE SLOT ACTIVATION      PASS
+REBOOT INTO NEW VERSION       PASS
+RUNNING VERSION CHECK         PASS
+CHECK GITHUB -> UP TO DATE    PASS
+LVGL DISPLAY + TOUCH AFTER OTA PASS
+BOOTLOADER AUTO-ROLLBACK      SEPARATE VALIDATION GATE
+```
+
+The full project-scope GitHub OTA task is therefore closed for this example: the board can fetch the GitHub Release manifest, download the firmware asset through HTTPS, verify the byte count and SHA-256, write the inactive OTA slot, finalize the update, reboot into the new version and then report that the installed firmware is up to date.
+
+The only boundary deliberately not claimed here is automatic bootloader rollback. A/B OTA slots do not automatically prove rollback behavior. `PENDING_VERIFY -> rollback` must remain a separate validation gate unless the bootloader is built with rollback support and a deliberate failed-candidate experiment is physically executed.
+
 ## Goal
 
-The first firmware installation is performed over USB. After that, the device should be able to check GitHub Releases and update its application firmware directly over HTTPS without a private LAN OTA server.
+The first firmware installation is performed over USB. After that, the device updates application firmware directly from GitHub Releases over HTTPS without a private LAN OTA server.
 
 ```text
 WT32-SC01-PLUS
@@ -30,9 +53,12 @@ GitHub Releases
       v
 inactive OTA slot
       |
-      | SHA-256 PASS
+      | byte count + SHA-256 PASS
       v
 activate + reboot
+      |
+      v
+new firmware version running
 ```
 
 ## Version history
@@ -47,7 +73,26 @@ channel: stable
 board: panlee-zx3d50ce08s-v15-usrc
 ```
 
-### 0.1.1 — first GitHub OTA candidate
+Observed:
+
+```text
+LVGL OTA interface              PHYSICAL PASS
+Touch interaction               PHYSICAL PASS
+Saved Wi-Fi reconnect           PHYSICAL PASS
+16 MiB flash detected           PHYSICAL PASS
+2 MiB QSPI PSRAM detected       PHYSICAL PASS
+A/B OTA partition layout        PHYSICAL PASS
+GitHub manifest request path    PHYSICAL PASS TO HTTP RESPONSE
+Manifest result before Release  HTTP 404 — EXPECTED
+```
+
+The `404` was an expected pre-release boundary result because no OTA Release/manifest existed yet.
+
+Video evidence:
+
+- [YouTube Shorts — WT32-SC01-PLUS GitHub OTA](https://youtube.com/shorts/gVSZsYNjtj4)
+
+### 0.1.1 — failed early candidate, preserved as history
 
 Published as:
 
@@ -66,7 +111,7 @@ Guru Meditation Error: Core 1 panic'ed
 Debug exception reason: Stack canary watchpoint triggered (loopTask)
 ```
 
-Forensic flash readback established that the entire tested `app1` image-sized range was still erased (`0xFF`). Its SHA-256 was:
+Forensic flash readback established that the tested `app1` image-sized range was still erased (`0xFF`). Its SHA-256 was:
 
 ```text
 9986568ba714104dc25a7fd47df612fec466d9289f7b9178301a2950a719e89f
@@ -84,58 +129,40 @@ ELF SHA256: 0071b32e08374561...
 
 The crashing running image reported a different ELF SHA prefix (`6b983111a`), so the board never booted the published `0.1.1` candidate.
 
-Therefore `0.1.1` remains a preserved failed physical candidate. It must not be relabeled as a successful OTA release.
+This failed candidate is retained only as forensic history. It is not the current status of the OTA example and must not be used as the current project verdict.
 
-### 0.1.2 — stack-budget fix candidate
+### 0.1.2 — stack-budget fix baseline
 
-The source branch now carries a loop-task stack fix in `ota_stack_config.cpp`.
+The OTA download path performs TLS, HTTP, SHA-256, LVGL servicing and OTA buffering from the Arduino loop task. Arduino-ESP32 creates `setup()` / `loop()` inside `loopTask`, whose default stack was too small for the 0.1.1 path.
 
-Arduino-ESP32 creates `setup()` / `loop()` inside `loopTask`; the core default is 8 KiB. The `0.1.1` download path performs TLS, HTTP, SHA-256, LVGL servicing and OTA buffering inside that same task. The fix overrides the weak Arduino stack-size hook and raises the loop-task budget to 16 KiB.
+The fix is isolated in `ota_stack_config.cpp` and raises the Arduino loop-task budget to 16 KiB by overriding the weak Arduino hook:
 
-```text
-0.1.2 status: SOURCE FIX PREPARED
-physical status: NOT YET TESTED
+```cpp
+size_t getArduinoLoopTaskStackSize(void) {
+    return 16U * 1024U;
+}
 ```
 
-## Part 1 physical result
+`0.1.2` became the corrected USB-flashed baseline used for the successful GitHub OTA validation path.
 
-Video evidence:
+### 0.1.3 — successful GitHub OTA candidate
 
-- [YouTube Shorts — WT32-SC01-PLUS GitHub OTA, Part 1](https://youtube.com/shorts/gVSZsYNjtj4)
+The complete GitHub OTA path from `0.1.2` to `0.1.3` passed physically on the reference Panlee specimen. The validation was repeated successfully.
 
-Observed on the reference Panlee specimen:
+Acceptance items closed by the successful run:
 
-```text
-LVGL OTA interface              PHYSICAL PASS
-Touch interaction               PHYSICAL PASS
-Saved Wi-Fi reconnect           PHYSICAL PASS
-16 MiB flash detected           PHYSICAL PASS
-2 MiB QSPI PSRAM detected       PHYSICAL PASS
-A/B OTA partition layout        PHYSICAL PASS
-GitHub manifest request path    PHYSICAL PASS TO HTTP RESPONSE
-Manifest result before Release  HTTP 404 — EXPECTED
-```
-
-The `404` in Part 1 was an expected boundary result because no OTA Release/manifest existed yet.
-
-## Part 2 physical result — 0.1.1
-
-```text
-GitHub Actions / Release        PASS
-latest manifest                PASS
-manifest HTTPS fetch           PHYSICAL PASS
-0.1.1 version detection        PHYSICAL PASS
-DOWNLOAD & INSTALL path        ENTERED
-loopTask stack canary          PHYSICAL FAIL
-candidate bytes in app1        0 bytes observed
-SHA-256 verification           NOT REACHED
-Update.end()                   NOT REACHED
-slot activation                NOT REACHED
-boot into 0.1.1                NOT REACHED
-full GitHub OTA cycle          NOT PASSED
-```
-
-This is intentionally recorded as a failed physical gate rather than hidden or converted into a source-only success.
+- permanent GitHub `latest/download` manifest resolved;
+- manifest schema, board id, channel and semantic version were accepted;
+- firmware asset downloaded through GitHub HTTPS redirects;
+- received byte count matched the manifest;
+- streamed SHA-256 matched the manifest;
+- inactive OTA slot write completed;
+- update finalization completed;
+- boot partition changed to the new slot;
+- board rebooted into the new firmware;
+- firmware reported the new version after reboot;
+- LVGL display and touch remained operational;
+- a second GitHub check reported `UP TO DATE`.
 
 ## Manifest URL
 
@@ -197,8 +224,6 @@ Each application slot is:
 0x640000 = 6,553,600 bytes = 6.25 MiB
 ```
 
-The generated build directory was physically inspected during Part 1 and confirmed to contain this exact partition table and a generated `*.partitions.bin`.
-
 The Arduino CLI `96% / 1,310,720 bytes` message is the generic board profile's `upload.maximum_size` reporting value. It does not replace the sketch-local 16 MiB A/B partition table.
 
 ## GitHub Actions release pipeline
@@ -220,63 +245,6 @@ For an `ota-v*` tag it:
 7. generates `panlee-github-ota.json`;
 8. publishes `panlee-github-ota.bin` and `panlee-github-ota.json` as GitHub Release assets.
 
-## Next validation sequence
-
-The failed `0.1.1` release is preserved as evidence. The next clean validation sequence is:
-
-```text
-USB flash fixed baseline 0.1.2
-        ↓
-verify UI + CHECK GITHUB stability
-        ↓
-publish a later OTA candidate
-        ↓
-DOWNLOAD & INSTALL
-        ↓
-HTTPS download
-        ↓
-SHA-256 PASS
-        ↓
-inactive OTA slot activated
-        ↓
-reboot into new version
-        ↓
-running slot changed
-        ↓
-CHECK GITHUB -> UP TO DATE
-```
-
-A future physical PASS requires all of the following:
-
-- manifest is found from the permanent GitHub URL;
-- firmware asset downloads successfully through GitHub redirects;
-- byte count matches manifest;
-- SHA-256 matches manifest;
-- update finalizes successfully;
-- board reboots into the other OTA slot;
-- firmware reports the new version after reboot;
-- LVGL display and touch remain operational;
-- a second update check reports `UP TO DATE`.
-
-## Rollback boundary
-
-A/B OTA slots do not automatically prove bootloader rollback.
-
-Automatic `PENDING_VERIFY -> rollback` behavior must not be claimed unless the actual bootloader is built with rollback support and a deliberate failed-candidate experiment has been physically executed.
-
-Current scope:
-
-```text
-A/B inactive-slot OTA       IMPLEMENTED
-HTTPS certificate check     IMPLEMENTED
-manifest profile check      IMPLEMENTED
-SHA-256 verification        IMPLEMENTED IN SOURCE
-slot activation + reboot    IMPLEMENTED IN SOURCE
-0.1.1 physical OTA          FAILED BEFORE FIRST APP1 WRITE
-0.1.2 stack fix             SOURCE PREPARED
-bootloader auto-rollback    SEPARATE VALIDATION GATE
-```
-
 ## Build
 
 From repository root:
@@ -288,18 +256,12 @@ From repository root:
   "libraries/WT32_SC01_PLUS/examples/20_LVGL_GitHubOTA"
 ```
 
-## Current status
+## Final scope statement
 
 ```text
-PART 1 BASELINE 0.1.0        PHYSICALLY EXERCISED
-PART 1 VIDEO                  DOCUMENTED
-EXPECTED PRE-RELEASE 404      OBSERVED
-OTA-V0.1.1 RELEASE            PUBLISHED / CI PASS
-0.1.0 -> 0.1.1 OTA            PHYSICAL FAIL: loopTask stack overflow
-APP1 FORENSIC READBACK        ALL 0xFF / NO CANDIDATE BYTES WRITTEN
-SOURCE CANDIDATE 0.1.2        STACK FIX PREPARED
-0.1.2 PHYSICAL TEST           REQUIRED
-FULL GITHUB OTA               NOT YET PASSED
-BOOTLOADER ROLLBACK           SEPARATE VALIDATION GATE
-WEB FLASHER                   NOT YET ELIGIBLE
+DECLARED GITHUB OTA PATH      CLOSED / PHYSICAL PASS
+FAILED 0.1.1 CANDIDATE        HISTORICAL FORENSIC RECORD ONLY
+CURRENT SUCCESSFUL PATH       0.1.2 -> 0.1.3
+BOOTLOADER AUTO-ROLLBACK      NOT CLAIMED / SEPARATE VALIDATION GATE
+SIGNED FIRMWARE AUTHENTICITY  FUTURE HARDENING
 ```
